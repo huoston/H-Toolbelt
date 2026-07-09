@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+.media/
+
+# Packaged / signed extension artifacts
+*.zxp
+*.zip
+
+# Signing certificates and keys (never commit)
+*.p12
+*.pfx
+*.pem
+*.key
+cert*
+!cert*.md
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+!.env.production
+*.local
+
+# Logs and caches
+yarn-error.log
+npm-debug.log*
+.cache/
+.vite/
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
