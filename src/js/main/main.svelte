@@ -4,12 +4,17 @@
   Hosts the Easings tool: a grid of cubic-bezier preset buttons that apply native
   temporal ease to the selected keyframes via a typed evalTS call to the host.
 
+  Boot hardening: the UI renders from CSS custom properties that already carry
+  fixed dark fallbacks (also set by boot-guard), so it mounts with or without the
+  AE theme. Theming is applied lazily and defensively in onMount, and a
+  <svelte:boundary> surfaces any render error as visible text.
+
   Author: Dr. Huoston Rodrigues
   Website: https://huoston.art/
   Email: hello@huoston.art
   Version: 0.1.0
   Created: 2026-07-09
-  Modified: 2026-07-09
+  Modified: 2026-07-10
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -18,6 +23,7 @@
   import { evalTS } from "../lib/utils/bolt";
   import { EASING_PRESETS, type Bezier } from "../../shared/easing";
   import { initAeTheme } from "./theme";
+  import { renderBootError } from "./boot-guard";
   import "../index.scss";
   import "./main.scss";
 
@@ -43,41 +49,54 @@
   };
 
   onMount(() => {
-    initAeTheme();
+    // Theming is optional enrichment; failure must not blank the panel.
+    try {
+      initAeTheme();
+    } catch (e) {
+      console.error("initAeTheme failed", e);
+    }
   });
 </script>
 
-<main class="htb">
-  <header class="htb-head">
-    <h1 class="htb-title">H-Toolbelt</h1>
-  </header>
+<svelte:boundary onerror={(e) => renderBootError(e)}>
+  <main class="htb">
+    <header class="htb-head">
+      <h1 class="htb-title">H-Toolbelt</h1>
+    </header>
 
-  <section class="htb-tool">
-    <h2 class="htb-tool-name">Easings</h2>
-    <div class="htb-grid">
-      {#each EASING_PRESETS as preset (preset.label)}
-        <button
-          class="htb-preset"
-          disabled={busy}
-          onclick={() => applyPreset(preset.label, preset.bezier)}
-        >
-          {preset.label}
-        </button>
-      {/each}
-    </div>
-    <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
-      {feedback}
-    </p>
-  </section>
-</main>
+    <section class="htb-tool">
+      <h2 class="htb-tool-name">Easings</h2>
+      <div class="htb-grid">
+        {#each EASING_PRESETS as preset (preset.label)}
+          <button
+            class="htb-preset"
+            disabled={busy}
+            onclick={() => applyPreset(preset.label, preset.bezier)}
+          >
+            {preset.label}
+          </button>
+        {/each}
+      </div>
+      <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
+        {feedback}
+      </p>
+    </section>
+  </main>
+
+  {#snippet failed(error)}
+    <pre class="htb-render-error">{String(
+        (error as any)?.stack ?? (error as any)?.message ?? error
+      )}</pre>
+  {/snippet}
+</svelte:boundary>
 
 <style lang="scss">
   .htb {
     box-sizing: border-box;
     min-height: 100vh;
     padding: 12px 14px;
-    background-color: var(--htb-bg, #282c34);
-    color: var(--htb-fg, #d8dbe0);
+    background-color: var(--htb-bg, #1e1e1e);
+    color: var(--htb-text, #e0e0e0);
     font-size: 12px;
   }
 
@@ -98,7 +117,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--htb-muted, #8a8f98);
+    color: var(--htb-text-muted, #9a9a9a);
   }
 
   .htb-grid {
@@ -112,9 +131,9 @@
     padding: 8px 6px;
     font-size: 12px;
     font-weight: 500;
-    color: var(--htb-fg, #d8dbe0);
-    background-color: var(--htb-surface, #333842);
-    border: 1px solid var(--htb-border, #3f4550);
+    color: var(--htb-text, #e0e0e0);
+    background-color: var(--htb-surface, #2a2a2a);
+    border: 1px solid var(--htb-border, #3a3a3a);
     border-radius: 4px;
     cursor: pointer;
     user-select: none;
@@ -124,12 +143,12 @@
   }
 
   .htb-preset:hover:not(:disabled) {
-    background-color: var(--htb-surface-hover, #3d434f);
-    border-color: var(--htb-accent, #2063a0);
+    background-color: var(--htb-surface-hover, #333333);
+    border-color: var(--htb-accent, #2f6fb0);
   }
 
   .htb-preset:active:not(:disabled) {
-    background-color: var(--htb-accent, #2063a0);
+    background-color: var(--htb-accent, #2f6fb0);
   }
 
   .htb-preset:disabled {
@@ -141,11 +160,26 @@
     min-height: 1.2em;
     margin: 10px 0 0;
     font-size: 11px;
-    color: var(--htb-muted, #8a8f98);
+    color: var(--htb-text-muted, #9a9a9a);
   }
 
   .htb-feedback.htb-error {
     // Fixed warm tone stays readable on both light and dark AE themes.
     color: #e0654f;
+  }
+
+  .htb-render-error {
+    margin: 0;
+    padding: 12px 14px;
+    min-height: 100vh;
+    box-sizing: border-box;
+    background-color: var(--htb-bg, #1e1e1e);
+    color: var(--htb-text, #e0e0e0);
+    font-family: Menlo, Consolas, "Courier New", monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: auto;
   }
 </style>

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Panel blank screen on boot: guard `appSkinInfo` theming with dark fallback; add
+  visible runtime error boundary. Theming is now lazy and fully guarded (no CEP
+  access at module top level), the UI renders from fixed dark CSS variables
+  before any host call, and global `error`/`unhandledrejection` handlers plus a
+  Svelte boundary render any failure as visible text instead of a black panel.
+
 ### Added
 
 - Easings tool (engine + presets): applies native temporal ease
