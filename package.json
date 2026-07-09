@@ -1,5 +1,5 @@
 {
-  "name": "com.huoston.htoolbelt", 
+  "name": "com.huoston.htoolbelt",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,13 +9,14 @@
     "build": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && vite build --watch false",
     "zxp": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZXP_PACKAGE=true vite build --watch false",
     "zip": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZIP_PACKAGE=true vite build --watch false",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "serve": "cross-env SERVE_PANEL=true vite preview",
     "symlink": "cross-env BOLT_ACTION=symlink vite",
     "delsymlink": "cross-env BOLT_ACTION=delsymlink vite"
   },
   "dependencies": {},
   "devDependencies": {
-    "source-map": "^0.7.4",
     "@babel/core": "^7.19.0",
     "@babel/plugin-proposal-class-properties": "^7.16.0",
     "@babel/plugin-proposal-object-rest-spread": "^7.16.0",
@@ -25,8 +26,6 @@
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.16.0",
     "@babel/runtime": "^7.16.3",
-    "babel-plugin-transform-scss": "^1.2.0",
-    "babel-preset-env": "^1.7.0",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-image": "^3.0.3",
@@ -38,6 +37,8 @@
     "@types/fs-extra": "^9.0.13",
     "@types/node": "^16.11.7",
     "@types/trusted-types": "^2.0.2",
+    "babel-plugin-transform-scss": "^1.2.0",
+    "babel-preset-env": "^1.7.0",
     "core-js": "3",
     "cross-env": "^7.0.3",
     "fs-extra": "^10.0.0",
@@ -47,6 +48,7 @@
     "rollup-plugin-node-copy": "^1.0.4",
     "rollup-plugin-scss": "^4.0.1",
     "sass": "^1.89.1",
+    "source-map": "^0.7.4",
     "svelte": "^5.33.14",
     "svelte-check": "^4.2.1",
     "svelte-preprocess": "^6.0.3",
@@ -54,6 +56,7 @@
     "types-for-adobe-extras": "^0.0.9",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-cep-plugin": "^2.2.3"
+    "vite-cep-plugin": "^2.2.3",
+    "vitest": "2.1.9"
   }
 }

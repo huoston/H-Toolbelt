@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Easings tool (engine + presets): applies native temporal ease
+  (influence/speed) to selected keyframes via six cubic-bezier preset buttons.
+  Includes a pure, unit-tested bezier→temporal-ease conversion engine reused by
+  the upcoming curve editor, and an AE-themed panel driven by `appSkinInfo`.
 - Project scaffold: bolt-cep (Svelte + TypeScript) CEP extension targeting Adobe
   After Effects (`AEFT`, host range `[16.0,99.9]`), bundle id
   `com.huoston.htoolbelt`.
