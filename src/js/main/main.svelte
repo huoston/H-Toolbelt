@@ -6,8 +6,10 @@
 
   Boot hardening: the UI renders from CSS custom properties that already carry
   fixed dark fallbacks (also set by boot-guard), so it mounts with or without the
-  AE theme. Theming is applied lazily and defensively in onMount, and a
-  <svelte:boundary> surfaces any render error as visible text.
+  AE theme. Theming is applied lazily and defensively in onMount. Mount-time
+  errors are surfaced by the window error handlers and the mount() try/catch in
+  index-svelte.ts, routed to the plain-DOM renderer in boot-guard — no
+  <svelte:boundary>, which masks mount-time errors in CEP's CEF.
 
   Author: Dr. Huoston Rodrigues
   Website: https://huoston.art/
@@ -23,7 +25,6 @@
   import { evalTS } from "../lib/utils/bolt";
   import { EASING_PRESETS, type Bezier } from "../../shared/easing";
   import { initAeTheme } from "./theme";
-  import { renderBootError } from "./boot-guard";
   import "../index.scss";
   import "./main.scss";
 
@@ -58,37 +59,29 @@
   });
 </script>
 
-<svelte:boundary onerror={(e) => renderBootError(e)}>
-  <main class="htb">
-    <header class="htb-head">
-      <h1 class="htb-title">H-Toolbelt</h1>
-    </header>
+<main class="htb">
+  <header class="htb-head">
+    <h1 class="htb-title">H-Toolbelt</h1>
+  </header>
 
-    <section class="htb-tool">
-      <h2 class="htb-tool-name">Easings</h2>
-      <div class="htb-grid">
-        {#each EASING_PRESETS as preset (preset.label)}
-          <button
-            class="htb-preset"
-            disabled={busy}
-            onclick={() => applyPreset(preset.label, preset.bezier)}
-          >
-            {preset.label}
-          </button>
-        {/each}
-      </div>
-      <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
-        {feedback}
-      </p>
-    </section>
-  </main>
-
-  {#snippet failed(error)}
-    <pre class="htb-render-error">{String(
-        (error as any)?.stack ?? (error as any)?.message ?? error
-      )}</pre>
-  {/snippet}
-</svelte:boundary>
+  <section class="htb-tool">
+    <h2 class="htb-tool-name">Easings</h2>
+    <div class="htb-grid">
+      {#each EASING_PRESETS as preset (preset.label)}
+        <button
+          class="htb-preset"
+          disabled={busy}
+          onclick={() => applyPreset(preset.label, preset.bezier)}
+        >
+          {preset.label}
+        </button>
+      {/each}
+    </div>
+    <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
+      {feedback}
+    </p>
+  </section>
+</main>
 
 <style lang="scss">
   .htb {
@@ -166,20 +159,5 @@
   .htb-feedback.htb-error {
     // Fixed warm tone stays readable on both light and dark AE themes.
     color: #e0654f;
-  }
-
-  .htb-render-error {
-    margin: 0;
-    padding: 12px 14px;
-    min-height: 100vh;
-    box-sizing: border-box;
-    background-color: var(--htb-bg, #1e1e1e);
-    color: var(--htb-text, #e0e0e0);
-    font-family: Menlo, Consolas, "Courier New", monospace;
-    font-size: 11px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow: auto;
   }
 </style>

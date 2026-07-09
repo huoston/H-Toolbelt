@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Remove `<svelte:boundary>` (masks mount-time errors in CEP's CEF); error
+  handling now via window handlers + mount try/catch + plain-DOM renderer. The
+  boundary itself crashed while handling the original mount error, hiding the root
+  cause behind a second failure; the panel now relies solely on the global
+  `error`/`unhandledrejection` handlers, the `mount()` try/catch, and the
+  non-Svelte error renderer in `boot-guard.ts`.
 - Debug build: sourcemaps on, minify off (temporary, until release). The panel
   bundle ships unminified with sourcemaps so runtime stack traces point to real
   file:line locations while the boot regression is diagnosed. See the
