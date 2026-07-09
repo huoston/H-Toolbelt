@@ -29,6 +29,26 @@ attribution header and the `GPL-3.0-or-later` SPDX identifier.
    ```
 4. Open a pull request describing the change and how you verified it.
 
+## Debugging the panel
+
+For a live, readable development build with hot-module reload and sourcemaps
+(non-minified), run:
+
+```bash
+yarn dev
+```
+
+This serves the panel over Vite (HMR) instead of the packaged bundle. With CEP
+`PlayerDebugMode` enabled, open the panel in After Effects
+(**Window → Extensions → H-Toolbelt**) and attach Chrome to the CEP remote
+debugger at the port listed in `dist/cep/.debug` (currently
+`http://localhost:8860` for AEFT) to inspect the console, network, and readable
+stack traces.
+
+> The production build currently ships **unminified with sourcemaps** as a
+> temporary debug aid (see `vite.config.ts`, `TODO(release)`). Minification will
+> be re-enabled before the public release.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).

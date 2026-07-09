@@ -35,6 +35,25 @@ const clamp255 = (n: number): number => Math.min(255, Math.max(0, Math.round(n))
 
 const rgb = (c: Rgb): string => `rgb(${c.r}, ${c.g}, ${c.b})`;
 
+const isFiniteNumber = (v: unknown): v is number =>
+  typeof v === "number" && isFinite(v);
+
+/**
+ * Read an RGB triple from an AE color node. Accepts either a color wrapper
+ * (`{ color: { red, green, blue } }`, as panelBackgroundColor uses) or a bare
+ * `{ red, green, blue }` (as systemHighlightColor uses). Returns null on any
+ * unexpected shape instead of throwing.
+ */
+const readColor = (node: any): Rgb | null => {
+  if (!node || typeof node !== "object") return null;
+  const c =
+    node.color && typeof node.color === "object" ? node.color : node;
+  if (isFiniteNumber(c.red) && isFiniteNumber(c.green) && isFiniteNumber(c.blue)) {
+    return { r: c.red, g: c.green, b: c.blue };
+  }
+  return null;
+};
+
 /** Mix a color toward white (amount > 0) or black (amount < 0), -1..1. */
 const shade = (c: Rgb, amount: number): Rgb => {
   const target = amount >= 0 ? 255 : 0;
@@ -51,27 +70,55 @@ const luminance = (c: Rgb): number =>
   (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
 
 /**
- * Read the AE panel background and system highlight. Throws if CEP is not
- * available or the payload is malformed; callers must guard.
+ * Read the AE panel background and system highlight, validating every level of
+ * the payload (AE 2026 may report an unexpected shape). Returns null — never
+ * throws — when anything is missing or malformed, so the dark fallback stays.
  */
-const readAeColors = (): { bg: Rgb; accent: Rgb } => {
-  const env = JSON.parse(window.__adobe_cep__.getHostEnvironment() as string);
-  const skin = env.appSkinInfo;
-  const bgColor = skin.panelBackgroundColor.color;
-  const hl = skin.systemHighlightColor;
-  return {
-    bg: { r: bgColor.red, g: bgColor.green, b: bgColor.blue },
-    accent: hl ? { r: hl.red, g: hl.green, b: hl.blue } : FALLBACK_ACCENT,
-  };
+const readAeColors = (): { bg: Rgb; accent: Rgb } | null => {
+  const cep = window.__adobe_cep__;
+  if (!cep || typeof cep.getHostEnvironment !== "function") return null;
+
+  const raw = cep.getHostEnvironment();
+  if (typeof raw !== "string") {
+    console.warn("[H-Toolbelt] getHostEnvironment did not return a string", raw);
+    return null;
+  }
+
+  let env: any;
+  try {
+    env = JSON.parse(raw);
+  } catch (e) {
+    console.warn("[H-Toolbelt] hostEnvironment is not valid JSON", raw);
+    return null;
+  }
+
+  const skin = env && typeof env === "object" ? env.appSkinInfo : undefined;
+  if (!skin || typeof skin !== "object") {
+    console.warn("[H-Toolbelt] appSkinInfo missing on hostEnvironment", env);
+    return null;
+  }
+
+  const bg = readColor(skin.panelBackgroundColor);
+  if (!bg) {
+    console.warn(
+      "[H-Toolbelt] panelBackgroundColor has an unexpected shape",
+      skin.panelBackgroundColor
+    );
+    return null;
+  }
+
+  const accent = readColor(skin.systemHighlightColor) ?? FALLBACK_ACCENT;
+  return { bg, accent };
 };
 
 /**
- * Compute the CSS variable set for the current AE theme and paint :root. Only
- * called when `readAeColors` succeeds, so it never overrides the dark fallback
- * with garbage.
+ * Compute the CSS variable set for the current AE theme and paint :root. Returns
+ * false (leaving the dark fallback untouched) when the skin cannot be read.
  */
-const paint = (): void => {
-  const { bg, accent } = readAeColors();
+const paint = (): boolean => {
+  const colors = readAeColors();
+  if (!colors) return false;
+  const { bg, accent } = colors;
   const isDark = luminance(bg) < 0.5;
 
   // Derive surfaces/text from the background so nothing is hardcoded light.
@@ -94,6 +141,7 @@ const paint = (): void => {
   for (const key in vars) {
     root.style.setProperty(key, vars[key]);
   }
+  return true;
 };
 
 /**
@@ -106,7 +154,8 @@ export const initAeTheme = (): void => {
     // Outside of CEP (e.g. plain browser) there is nothing to read; keep dark.
     if (!window.cep || !window.__adobe_cep__) return;
 
-    paint();
+    // If the skin can't be parsed, keep the dark fallback and skip the listener.
+    if (!paint()) return;
 
     try {
       window.__adobe_cep__.addEventListener(

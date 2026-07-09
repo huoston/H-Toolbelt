@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Debug build: sourcemaps on, minify off (temporary, until release). The panel
+  bundle ships unminified with sourcemaps so runtime stack traces point to real
+  file:line locations while the boot regression is diagnosed. See the
+  `TODO(release)` in `vite.config.ts`.
+
 ### Fixed
 
+- Defensive `appSkinInfo` parsing with dark fallback (guards every level). The
+  theming reader validates `hostEnvironment`, `appSkinInfo`, each color node and
+  its numeric components before use, warning and keeping the dark fallback on any
+  unexpected shape instead of throwing.
 - Panel blank screen on boot: guard `appSkinInfo` theming with dark fallback; add
   visible runtime error boundary. Theming is now lazy and fully guarded (no CEP
   access at module top level), the UI renders from fixed dark CSS variables

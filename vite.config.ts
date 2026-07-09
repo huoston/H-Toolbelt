@@ -65,7 +65,13 @@ export default defineConfig({
   },
 
   build: {
-    sourcemap: isPackage ? cepConfig.zxp.sourceMap : cepConfig.build?.sourceMap,
+    // Debug state: readable stack traces in the panel error boundary and in the
+    // CEP DevTools while the blank-screen regression is being diagnosed.
+    // TODO(release): re-enable minify and restore the conditional sourcemap
+    // (`isPackage ? cepConfig.zxp.sourceMap : cepConfig.build?.sourceMap`) before
+    // the public release.
+    sourcemap: true,
+    minify: false,
     watch: {
       include: "src/jsx/**",
     },
