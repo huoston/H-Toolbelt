@@ -23,10 +23,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { evalTS } from "../lib/utils/bolt";
-  import { EASING_PRESETS, type Bezier } from "../../shared/easing";
+  import { EASING_PRESETS } from "../../shared/easing";
+  import type { Bezier } from "../../shared/easing";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
+
+  // Bind EASING_PRESETS into component scope and iterate this local in the
+  // markup. svelte-preprocess transpiles each <script> block in isolation, and
+  // TypeScript's import elision drops any import not referenced as a value in the
+  // script — an import used only in the template would be treated as unused and
+  // removed, producing `ReferenceError: EASING_PRESETS is not defined` on mount.
+  // Referencing it here keeps the import alive through the transpile.
+  const presets = EASING_PRESETS;
 
   let feedback: string = $state("");
   let isError: boolean = $state(false);
@@ -67,7 +76,7 @@
   <section class="htb-tool">
     <h2 class="htb-tool-name">Easings</h2>
     <div class="htb-grid">
-      {#each EASING_PRESETS as preset (preset.label)}
+      {#each presets as preset (preset.label)}
         <button
           class="htb-preset"
           disabled={busy}

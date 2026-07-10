@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `main.svelte`: import `EASING_PRESETS` from `shared/easing` (ReferenceError on
+  mount). The preset list was used only in the `{#each}` template, so
+  svelte-preprocess's isolated per-block TypeScript transpile elided the import as
+  unused and it never reached the bundle — `EASING_PRESETS is not defined` on
+  mount. Binding the constant into component scope (`const presets =
+  EASING_PRESETS`) keeps the import alive through the transpile; the array now
+  inlines into the panel bundle.
 - Defensive `appSkinInfo` parsing with dark fallback (guards every level). The
   theming reader validates `hostEnvironment`, `appSkinInfo`, each color node and
   its numeric components before use, warning and keeping the dark fallback on any
