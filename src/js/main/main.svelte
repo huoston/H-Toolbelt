@@ -1,8 +1,9 @@
 <!--
   H-Toolbelt — main panel.
 
-  Hosts the Easings tool: a grid of cubic-bezier preset buttons that apply native
-  temporal ease to the selected keyframes via a typed evalTS call to the host.
+  Hosts the Easings tool: cubic-bezier preset buttons load a curve into the
+  draggable CurveEditor; Apply sends the editor's current curve (preset or
+  hand-tuned) to the native temporal-ease engine via a typed evalTS call.
 
   Boot hardening: the UI renders from CSS custom properties that already carry
   fixed dark fallbacks (also set by boot-guard), so it mounts with or without the
@@ -24,7 +25,8 @@
   import { onMount } from "svelte";
   import { evalTS } from "../lib/utils/bolt";
   import { EASING_PRESETS } from "../../shared/easing";
-  import type { Bezier } from "../../shared/easing";
+  import type { Bezier, EasingPreset } from "../../shared/easing";
+  import CurveEditor from "./CurveEditor.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
@@ -37,15 +39,37 @@
   // Referencing it here keeps the import alive through the transpile.
   const presets = EASING_PRESETS;
 
+  // The live curve shared with the editor. Presets load into it; drags flow back
+  // through the binding; Apply reads it. Starts on the first preset.
+  let bezier: Bezier = $state([...presets[0].bezier]);
+
   let feedback: string = $state("");
   let isError: boolean = $state(false);
   let busy: boolean = $state(false);
 
-  const applyPreset = async (label: string, bezier: Bezier) => {
+  // Highlight the preset whose curve exactly matches the editor; dragging away
+  // from a preset clears the highlight automatically.
+  const activeLabel = $derived(
+    presets.find(
+      (p) =>
+        p.bezier[0] === bezier[0] &&
+        p.bezier[1] === bezier[1] &&
+        p.bezier[2] === bezier[2] &&
+        p.bezier[3] === bezier[3]
+    )?.label ?? null
+  );
+
+  // Clicking a preset loads its curve into the editor (handles jump); it does
+  // not apply. A fresh copy keeps the preset constant immutable under drags.
+  const loadPreset = (preset: EasingPreset): void => {
+    bezier = [...preset.bezier];
+  };
+
+  const apply = async (): Promise<void> => {
     if (busy) return;
     busy = true;
     isError = false;
-    feedback = `Applying ${label}…`;
+    feedback = "Applying…";
     try {
       const res = await evalTS("applyEasing", bezier);
       isError = res.applied === 0;
@@ -79,13 +103,20 @@
       {#each presets as preset (preset.label)}
         <button
           class="htb-preset"
-          disabled={busy}
-          onclick={() => applyPreset(preset.label, preset.bezier)}
+          class:htb-active={activeLabel === preset.label}
+          onclick={() => loadPreset(preset)}
         >
           {preset.label}
         </button>
       {/each}
     </div>
+
+    <CurveEditor bind:bezier />
+
+    <div class="htb-actions">
+      <button class="htb-apply" disabled={busy} onclick={apply}>Apply</button>
+    </div>
+
     <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
       {feedback}
     </p>
@@ -154,6 +185,37 @@
   }
 
   .htb-preset:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .htb-preset.htb-active {
+    border-color: var(--htb-accent, #2f6fb0);
+    background-color: var(--htb-surface-hover, #333333);
+  }
+
+  .htb-actions {
+    margin-top: 10px;
+  }
+
+  .htb-apply {
+    appearance: none;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--htb-text, #e0e0e0);
+    background-color: var(--htb-accent, #2f6fb0);
+    border: 1px solid var(--htb-accent, #2f6fb0);
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .htb-apply:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
+
+  .htb-apply:disabled {
     opacity: 0.55;
     cursor: default;
   }

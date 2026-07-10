@@ -52,6 +52,28 @@ describe("bezierToTemporalEase", () => {
     expect(ease.out.speed).toBeCloseTo(100, 5);
   });
 
+  it("non-zero endpoint slopes drive real out/in speeds (covers the speed path)", () => {
+    // The six presets all have x1=y1... endpoints that zero the speed term; a
+    // steep, hand-tuned curve (the editor's reason for existing) exercises it.
+    // Both tangents are steeper than the segment's average rate.
+    const steep: Bezier = [0.25, 0.5, 0.75, 0.5];
+    const timeDelta = 2;
+    const valueDelta = 200;
+    const averageSpeed = valueDelta / timeDelta; // 100
+    const ease = bezierToTemporalEase(steep, timeDelta, valueDelta);
+
+    // out.speed = (y1 / x1) * averageSpeed = (0.5 / 0.25) * 100 = 200
+    expect(ease.out.speed).toBeCloseTo(2 * averageSpeed, 5);
+    // in.speed = ((1 - y2) / (1 - x2)) * averageSpeed = (0.5 / 0.25) * 100 = 200
+    expect(ease.in.speed).toBeCloseTo(2 * averageSpeed, 5);
+    // Positive sign (value rising) and genuinely non-zero on both sides.
+    expect(ease.out.speed).toBeGreaterThan(0);
+    expect(ease.in.speed).toBeGreaterThan(0);
+    // Influences track the x components: x1*100 = 25 and (1 - x2)*100 = 25.
+    expect(ease.out.influence).toBeCloseTo(25, 5);
+    expect(ease.in.influence).toBeCloseTo(25, 5);
+  });
+
   it("throws a catchable error when timeDelta <= 0", () => {
     expect(() => bezierToTemporalEase(preset("Easy Ease"), 0, 100)).toThrow();
     expect(() => bezierToTemporalEase(preset("Easy Ease"), -1, 100)).toThrow();

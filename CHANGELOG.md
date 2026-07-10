@@ -41,6 +41,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Draggable cubic-bezier curve editor (presets load into editor; Apply uses
+  validated engine). The Easings section now hosts an SVG `CurveEditor` with two
+  pointer-draggable handles (clamped to x,y ∈ [0,1]) and a live numeric readout;
+  preset buttons load their curve into the editor instead of applying directly,
+  and a single Apply button sends the current curve — preset or hand-tuned — to
+  the unchanged `applyEasing` engine.
+- Bundle smoke test guarding against symbol elision. `scripts/smoke-bundle.mjs`
+  (run via `yarn smoke`, and in the release CI) asserts the six preset labels and
+  the `0.333` control-point value survive into the production bundle, failing the
+  build on the P02a-style `sveltePreprocess` template-only import elision.
+- Non-zero-speed unit test: exercises `bezierToTemporalEase` with a steep,
+  hand-tuned curve so the velocity path (zeroed by all six presets) is covered.
 - Easings tool (engine + presets): applies native temporal ease
   (influence/speed) to selected keyframes via six cubic-bezier preset buttons.
   Includes a pure, unit-tested bezier→temporal-ease conversion engine reused by
