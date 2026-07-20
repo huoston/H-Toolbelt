@@ -29,6 +29,7 @@
   import CurveEditor from "./CurveEditor.svelte";
   import AnchorGrid from "./AnchorGrid.svelte";
   import SequencePanel from "./SequencePanel.svelte";
+  import ExpressionsPanel from "./ExpressionsPanel.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
@@ -144,6 +145,11 @@
       <h2 class="htb-tool-name">Sequencing</h2>
       <SequencePanel />
     </section>
+
+    <section class="htb-tool htb-col htb-col-wide">
+      <h2 class="htb-tool-name">Expressions</h2>
+      <ExpressionsPanel />
+    </section>
   </div>
 </main>
 
@@ -190,9 +196,15 @@
 
   .htb-col {
     // Anchor Point needs ~110px for its 3x3 grid; Sequencing wants more. Below
-    // roughly 340px of panel width the two wrap into a single column.
+    // roughly 340px of panel width the columns wrap into a stack.
     flex: 1 1 150px;
     min-width: 0;
+  }
+
+  // Expressions carries three labelled inputs plus two rows of buttons, so it
+  // asks for more room and is the first column to wrap onto its own line.
+  .htb-col-wide {
+    flex: 1 1 210px;
   }
 
   // Neutralize the stacking rule between the two columns: their separation is

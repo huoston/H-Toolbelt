@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- One-Click Expression Effects: bounce and elastic (ES3 text, compatible with
+  both expression engines), plus Clear. The generated text is written in ES3 —
+  `var`, no arrows, no template literals — because After Effects ships two
+  expression engines and a project switched to Legacy ExtendScript treats modern
+  syntax as a parse error, disabling the expression on the user's property; the
+  forbidden constructs are pinned by tests, since the text is inert data to this
+  repo's own build and only becomes a program inside AE. Both effects scale a
+  decaying oscillation by the velocity going into the last keyframe, so the
+  overshoot inherits the animation's own speed. Bounce rectifies the sine
+  (`Math.abs(Math.sin(...))`) so every lobe pushes the same way; elastic leaves
+  it signed. The oscillation factor stays scalar because `value` may be an array
+  and `Math.abs(array)` is not legal in an expression. Parameters are baked into
+  the text rather than created as Expression Controls. The host refuses
+  properties that already carry an expression (never overwritten), that have
+  fewer than two keyframes (nothing to measure, so the effect would be inert),
+  that reject expressions, or whose value type the math does not cover — each
+  refusal naming the properties. `Clear` removes expressions from the selection.
+  One undo group per operation. Text generation lives in the pure, unit-tested
+  `shared/expressions` module, whose tests also execute the generated program to
+  confirm its dynamics.
 - Layer Sequencing: startTime-based offsets with
   timeline/reverse/in-point/seeded-random ordering. Sequencing writes
   `startTime` and nothing else, so each layer slides whole — keyframes travel

@@ -18,6 +18,8 @@ import {
 export { setAnchorPoint, setLayerAnchor, setShapeGroupAnchor };
 import { sequenceLayers } from "./sequence";
 export { sequenceLayers };
+import { applyExpression, clearExpressions } from "./expressions";
+export { applyExpression, clearExpressions };
 
 export const helloWorld = () => {
   alert("Hello from After Effects!");
