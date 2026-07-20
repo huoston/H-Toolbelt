@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   merely under consideration, with no dates. The bug template leads with the
   message shown in the panel, since the refusals are written to be diagnostic.
 
+### Changed
+
+- Repository history normalized to a single author. Commit messages carry no
+  co-authorship trailers, and `CONTRIBUTING.md` states the rule for future
+  commits. File contents are untouched: every commit's tree hash is identical to
+  what it was before, so only the messages and the commit identifiers changed.
+
 ## [0.1.0] - 2026-07-20
 
 First release. Four tools, each with its math in a pure, unit-tested module

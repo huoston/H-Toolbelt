@@ -89,6 +89,11 @@ with a comment explaining why, rather than deleting the rule.
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).
 Use prefixes such as `feat:`, `fix:`, `chore:`, `ci:`, and `docs:`.
 
+Commits carry no co-authorship trailers: the author of a commit is the person who
+made the change, and tooling used along the way is not credited in the message.
+If your editor or assistant appends a `Co-Authored-By:` or "Generated with"
+trailer by default, turn it off before committing.
+
 ## Language
 
 All code, comments, documentation, filenames, and commit messages are written in
