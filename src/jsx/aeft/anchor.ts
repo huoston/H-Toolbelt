@@ -50,6 +50,22 @@ const MN_ROTATE_X = "ADBE Rotate X";
 const MN_ROTATE_Y = "ADBE Rotate Y";
 const MN_ORIENTATION = "ADBE Orientation";
 
+/**
+ * Layer-type match names. Layer type is read from `matchName` and nothing else:
+ * `instanceof AVLayer` looks like the same question but is not — ExtendScript
+ * gives shape and text layers their own constructors, so they fail that test
+ * despite answering `sourceRectAtTime` perfectly well. Likewise `layer.source`
+ * is null for shape and text layers, so it says nothing about bounds either.
+ */
+const MN_LAYER_VECTOR = "ADBE Vector Layer";
+const MN_LAYER_TEXT = "ADBE Text Layer";
+const MN_LAYER_AV = "ADBE AV Layer";
+const MN_LAYER_CAMERA = "ADBE Camera Layer";
+const MN_LAYER_LIGHT = "ADBE Light Layer";
+
+/** Layer types documented to answer `sourceRectAtTime`. */
+const BOUNDED_LAYER_TYPES = [MN_LAYER_VECTOR, MN_LAYER_TEXT, MN_LAYER_AV];
+
 /** Shape-layer match names. */
 const MN_ROOT_VECTORS = "ADBE Root Vectors Group";
 const MN_VECTOR_GROUP = "ADBE Vector Group";
@@ -107,6 +123,88 @@ const buildMessage = (applied: number, noun: string, log: SkipLog): string => {
     msg += "; skipped " + log.total + ": " + predominantReason(log);
   }
   return msg;
+};
+
+/** Layer type, or "unknown" when AE will not report it. */
+const layerMatchName = (layer: Layer): string => {
+  try {
+    const mn = layer.matchName;
+    return mn ? mn : "unknown";
+  } catch (e) {
+    return "unknown";
+  }
+};
+
+/**
+ * "(Name) [ADBE Text Layer]" — appended to every refusal. A refusal that names
+ * the type it refused is a diagnosis; one that does not is a guessing game.
+ */
+const describeLayer = (layer: Layer): string => {
+  return "(" + layer.name + ") [" + layerMatchName(layer) + "]";
+};
+
+/** True for the layer types documented to have a source rectangle. */
+const isBoundedLayerType = (mn: string): boolean => {
+  for (let i = 0; i < BOUNDED_LAYER_TYPES.length; i++) {
+    if (BOUNDED_LAYER_TYPES[i] === mn) return true;
+  }
+  return false;
+};
+
+/**
+ * Refuse on type alone only where bounds are intrinsically absent. Cameras and
+ * lights have no source rectangle at all; everything else — including layer
+ * types this build has never heard of — falls through to the empirical probe,
+ * which answers the question by asking AE rather than by inference.
+ */
+const typeRefusal = (mn: string): string | null => {
+  if (mn === MN_LAYER_CAMERA || mn === MN_LAYER_LIGHT) {
+    return "Camera/Light has no bounds";
+  }
+  return null;
+};
+
+/** Outcome of actually asking AE for a bounding box. */
+interface RectProbe {
+  rect: SourceRect | null;
+  empty: boolean;
+}
+
+/**
+ * Ask for the bounding box and judge the answer, rather than predicting whether
+ * asking would work. A zero-size rect (empty shape, text with no glyphs) is a
+ * real box that happens to be degenerate, so it is reported apart from "no box".
+ */
+const probeRect = (layer: Layer, time: number): RectProbe => {
+  let rect: SourceRect | null = null;
+  try {
+    rect = (layer as AVLayer).sourceRectAtTime(time, false);
+  } catch (e) {
+    rect = null;
+  }
+  if (!rect) return { rect: null, empty: false };
+
+  const w = rect.width;
+  const h = rect.height;
+  if (
+    typeof w !== "number" ||
+    typeof h !== "number" ||
+    !isFinite(w) ||
+    !isFinite(h)
+  ) {
+    return { rect: null, empty: false };
+  }
+  if (w <= 0 || h <= 0) return { rect: null, empty: true };
+  return { rect: rect, empty: false };
+};
+
+/** Refusal text for a failed probe, or null when the probe produced a box. */
+const probeRefusal = (probe: RectProbe, mn: string): string | null => {
+  if (probe.rect) return null;
+  if (probe.empty) return "Empty layer (zero-size bounds)";
+  return isBoundedLayerType(mn)
+    ? "No bounding box available"
+    : "No bounding box available for unrecognised layer type";
 };
 
 /** Read a property by match name, or null when absent. */
@@ -256,15 +354,15 @@ const applyToLayer = (
   time: number,
   spec: AnchorPointSpec
 ): string | null => {
-  const name = layer.name;
+  const mn = layerMatchName(layer);
+  const name = describeLayer(layer);
 
   // Cameras and lights have no source rectangle to hang a bounding box on.
-  if (!(layer instanceof AVLayer)) {
-    return "No bounding box available (" + name + ")";
-  }
+  const typeSkip = typeRefusal(mn);
+  if (typeSkip !== null) return typeSkip + " " + name;
 
   const transform = layer.property(MN_TRANSFORM) as PropertyGroup;
-  if (!transform) return "No transform group (" + name + ")";
+  if (!transform) return "No transform group " + name;
 
   const anchorProp = prop(transform, MN_ANCHOR);
   const positionProp = prop(transform, MN_POSITION);
@@ -272,7 +370,7 @@ const applyToLayer = (
   const rotationProp = prop(transform, MN_ROTATE_Z);
 
   if (!anchorProp || !positionProp) {
-    return "No anchor/position properties (" + name + ")";
+    return "No anchor/position properties " + name;
   }
 
   if (isAnimated(anchorProp) || isAnimated(positionProp)) {
@@ -296,7 +394,10 @@ const applyToLayer = (
     // Property does not expose the flag; treat as not separated.
   }
 
-  if (layer.threeDLayer) {
+  // Cast, not narrow: the typings hang `threeDLayer` off AVLayer, but the
+  // runtime `instanceof AVLayer` that would narrow to it is the very test this
+  // fix removed — it is false for the shape and text layers we now accept.
+  if ((layer as AVLayer).threeDLayer) {
     const rx = numValue(prop(transform, MN_ROTATE_X), 0);
     const ry = numValue(prop(transform, MN_ROTATE_Y), 0);
     const orient = vecValue(prop(transform, MN_ORIENTATION));
@@ -308,15 +409,10 @@ const applyToLayer = (
     }
   }
 
-  let rect: SourceRect;
-  try {
-    rect = (layer as AVLayer).sourceRectAtTime(time, false);
-  } catch (e) {
-    return "No bounding box available (" + name + ")";
-  }
-  if (!rect || (rect.width === 0 && rect.height === 0)) {
-    return "Empty bounding box: skipped " + name;
-  }
+  const probe = probeRect(layer, time);
+  const probeSkip = probeRefusal(probe, mn);
+  if (probeSkip !== null) return probeSkip + " " + name;
+  const rect = probe.rect as SourceRect;
 
   const anchorVec = vecValue(anchorProp);
   const positionVec = vecValue(positionProp);
@@ -411,9 +507,13 @@ const applyToShapeGroup = (
   time: number,
   spec: AnchorPointSpec
 ): string | null => {
-  const gname = group.name;
+  // `layer` is the group's owner by construction: the caller reached this group
+  // through that layer's own `selectedProperties`, so no walk up the property
+  // chain is needed to find it.
+  const mn = layerMatchName(layer);
+  const gname = group.name + " " + describeLayer(layer);
 
-  if (!(layer instanceof ShapeLayer) || !(layer instanceof AVLayer)) {
+  if (mn !== MN_LAYER_VECTOR) {
     return "Not a shape layer: skipped " + gname;
   }
 
@@ -468,15 +568,10 @@ const applyToShapeGroup = (
     return "Zero group scale: skipped " + gname;
   }
 
-  let layerRect: SourceRect;
-  try {
-    layerRect = (layer as AVLayer).sourceRectAtTime(time, false);
-  } catch (e) {
-    return "No bounding box available: skipped " + gname;
-  }
-  if (!layerRect || (layerRect.width === 0 && layerRect.height === 0)) {
-    return "Empty bounding box: skipped " + gname;
-  }
+  const probe = probeRect(layer, time);
+  const probeSkip = probeRefusal(probe, mn);
+  if (probeSkip !== null) return probeSkip + ": skipped " + gname;
+  const layerRect = probe.rect as SourceRect;
 
   // Map the layer-space rect back into the group's content space by inverting
   // the group transform (translate + scale only, rotation is 0 here). Negative

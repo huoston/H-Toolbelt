@@ -24,6 +24,10 @@ several everyday automation tools behind one dockable interface.
 | **Sequencing**         | Sequence, stagger, and offset layers in time.              |
 | **Shape Layer Magic**  | Shape-layer creation and manipulation helpers.             |
 
+**Anchor Point — text layers:** the bounding box covers the glyphs actually drawn
+at the current frame, so with animated Source Text or text animators the box (and
+therefore the resulting anchor) differs frame to frame.
+
 ## Compatibility
 
 - **Host:** Adobe After Effects, **CC 2019 (16.0) through 2026 (26.x)**.

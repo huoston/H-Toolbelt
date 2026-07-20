@@ -40,6 +40,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Anchor Point rejected shape and text layers: replace indirect `source`-based
+  checks with matchName detection and empirical `sourceRectAtTime` validation;
+  refusal messages now include matchName. Both symptoms came from one proxy —
+  `instanceof AVLayer` — which ExtendScript does not satisfy for `ShapeLayer` or
+  `TextLayer` even though both answer `sourceRectAtTime` (their `source` is null
+  because they derive from no project item). Layer type is now read from
+  `matchName`, and only `ADBE Camera Layer` / `ADBE Light Layer` are refused on
+  type; every other layer, known type or not, has its bounding box probed for
+  real (`try`/`catch` plus finite, positive `width`/`height`) instead of
+  inferred. A zero-size box is reported separately as `Empty layer (zero-size
+  bounds)`. The shape-group gate now tests the owning layer's `matchName` against
+  `ADBE Vector Layer` rather than `instanceof`, so a group selected inside a
+  shape layer proceeds. Safety guards are unchanged — animated
+  anchor/position/scale/rotation, separated dimensions, rotated 3D and active
+  expressions still refuse — and the compensation math in `shared/anchor` is
+  untouched.
 - `CurveEditor` elided by TS import elision (svelte-preprocess); enable
   `verbatimModuleSyntax` on UI tsconfig; generalize bundle smoke test to cover
   imported component symbols. The component was used only in `main.svelte`'s
