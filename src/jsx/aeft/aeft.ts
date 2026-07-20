@@ -16,6 +16,8 @@ import {
   setShapeGroupAnchor,
 } from "./anchor";
 export { setAnchorPoint, setLayerAnchor, setShapeGroupAnchor };
+import { sequenceLayers } from "./sequence";
+export { sequenceLayers };
 
 export const helloWorld = () => {
   alert("Hello from After Effects!");

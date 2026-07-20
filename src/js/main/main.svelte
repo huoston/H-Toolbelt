@@ -28,6 +28,7 @@
   import type { Bezier, EasingPreset } from "../../shared/easing";
   import CurveEditor from "./CurveEditor.svelte";
   import AnchorGrid from "./AnchorGrid.svelte";
+  import SequencePanel from "./SequencePanel.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
@@ -132,10 +133,18 @@
     </p>
   </section>
 
-  <section class="htb-tool">
-    <h2 class="htb-tool-name">Anchor Point</h2>
-    <AnchorGrid />
-  </section>
+  <!-- The two compact tools share a row and stack on a narrow docked panel. -->
+  <div class="htb-columns">
+    <section class="htb-tool htb-col">
+      <h2 class="htb-tool-name">Anchor Point</h2>
+      <AnchorGrid />
+    </section>
+
+    <section class="htb-tool htb-col">
+      <h2 class="htb-tool-name">Sequencing</h2>
+      <SequencePanel />
+    </section>
+  </div>
 </main>
 
 <style lang="scss">
@@ -164,6 +173,34 @@
     margin-top: 14px;
     padding-top: 12px;
     border-top: 1px solid var(--htb-border, #3a3a3a);
+  }
+
+  // The compact tools sit side by side and wrap to a stack when the panel is
+  // docked narrow. The rule above the block belongs to the container, since the
+  // columns themselves must not be separated by one while they are in a row.
+  .htb-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--htb-border, #3a3a3a);
+  }
+
+  .htb-col {
+    // Anchor Point needs ~110px for its 3x3 grid; Sequencing wants more. Below
+    // roughly 340px of panel width the two wrap into a single column.
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  // Neutralize the stacking rule between the two columns: their separation is
+  // the flex gap, in a row and when wrapped alike.
+  .htb-columns .htb-tool + .htb-tool {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
   }
 
   .htb-easings {

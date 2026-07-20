@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Layer Sequencing: startTime-based offsets with
+  timeline/reverse/in-point/seeded-random ordering. Sequencing writes
+  `startTime` and nothing else, so each layer slides whole — keyframes travel
+  with it; writing `inPoint` instead would trim the layer and silently destroy
+  the head of the user's animation while looking correct in the timeline. Order
+  is never the click order, because `comp.selectedLayers` does not preserve it;
+  the user picks an explicit criterion instead, and Random is driven by a seeded
+  Park-Miller PRNG (not mulberry32, which needs `Math.imul` — absent from
+  ExtendScript) so the same seed reproduces the same cascade. The resolved first
+  layer keeps its start time and the rest stagger from it, so applying the tool
+  never relocates the selection; negative offsets cascade backwards. Locked
+  layers are dropped before ordering — not after — so a layer that cannot be
+  written never becomes the anchor. Offsets are entered in frames and converted
+  against `comp.frameDuration`. One undo group per operation. The ordering and
+  time math live in the pure, unit-tested `shared/sequence` module.
 - Smart Anchor Point Control: 9-point grid, transform-aware position
   compensation, guards against animated anchor/position. Moving a layer's anchor
   moves the layer, because `position` is measured from the anchor; the
