@@ -24,6 +24,14 @@ const isPackage = process.env.ZXP_PACKAGE === "true" || isMetaPackage;
 const isServe = process.env.SERVE_PANEL === "true";
 const action = process.env.BOLT_ACTION;
 
+// Debug builds keep readable identifiers and sourcemaps. They exist for two
+// consumers: developers reading a stack trace in the CEP DevTools, and
+// `scripts/smoke-bundle.mjs`, which proves that every symbol the UI imports
+// survived into the bundle by looking for its *binding* — a check minification
+// would defeat by renaming `CurveEditor` to `t`. Release builds minify; the
+// smoke test runs against the debug build instead of being weakened.
+const isDebugBuild = process.env.BOLT_DEBUG_BUILD === "true";
+
 let input: { [key: string]: string } = {};
 cepConfig.panels.map((panel) => {
   input[panel.name] = path.resolve(root, panel.mainPath);
@@ -65,13 +73,16 @@ export default defineConfig({
   },
 
   build: {
-    // Debug state: readable stack traces in the panel error boundary and in the
-    // CEP DevTools while the blank-screen regression is being diagnosed.
-    // TODO(release): re-enable minify and restore the conditional sourcemap
-    // (`isPackage ? cepConfig.zxp.sourceMap : cepConfig.build?.sourceMap`) before
-    // the public release.
-    sourcemap: true,
-    minify: false,
+    // Release ships minified and, per cep.config, without sourcemaps in the
+    // packaged ZXP — the source is public under GPL-3.0, so the maps buy no
+    // secrecy, but they do add ~570 kB to every install. Plain (non-package)
+    // builds keep them, which is where day-to-day debugging happens.
+    sourcemap: isDebugBuild
+      ? true
+      : isPackage
+        ? cepConfig.zxp.sourceMap
+        : cepConfig.build?.sourceMap,
+    minify: !isDebugBuild,
     watch: {
       include: "src/jsx/**",
     },

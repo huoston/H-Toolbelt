@@ -30,10 +30,8 @@ import {
   anchorForRect,
   computeAnchorMove,
   findAnchorPoint,
-  AnchorPointSpec,
-  SourceRect,
-  Vec2,
 } from "../../shared/anchor";
+import type { AnchorPointSpec, SourceRect, Vec2 } from "../../shared/anchor";
 
 export interface AnchorResult {
   applied: number;

@@ -7,8 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-20
+
+First release. Four tools, each with its math in a pure, unit-tested module
+shared by the panel and the ExtendScript host, and each refusing the cases it
+cannot handle safely rather than applying something hopeful.
+
 ### Added
 
+- Release hardening. `yarn build` minifies again (the debug settings were a
+  leftover from diagnosing the P02a blank-panel regression); `yarn build:debug`
+  keeps the unminified build with sourcemaps, and the smoke test runs against
+  *that*, because it proves symbols survived by looking for their bindings and
+  minification renames those. The packaged ZXP ships without sourcemaps — the
+  source is public under GPL-3.0, so they buy no secrecy and cost ~570 kB per
+  install.
+- `scripts/check-host-es3.mjs`: a guard against ES5+ *builtins* reaching the
+  ExtendScript host. Modern syntax already fails loudly, but `Math.imul(a, b)`
+  parses fine and throws only at runtime inside After Effects, in a path no Node
+  test exercises — the seeded PRNG in `shared/sequence` was nearly written that
+  way. The check parses the bundle and walks the AST rather than grepping it,
+  because the host legitimately contains the string `Math.abs(...)` as After
+  Effects expression *text*, and doc comments name these functions in prose;
+  a textual scan flags both and inspires false confidence. Ambiguous cases
+  (`.indexOf`, which is ES3 on String and ES5 on Array; `JSON`, provided by the
+  bundled json2 polyfill) are reported as notes rather than silently allowed.
+- `yarn typecheck:host` and `yarn typecheck:ui`. The host had never been
+  type-checked: its tsconfig declares `target: "es3"`, removed in TypeScript 5.8,
+  so `tsc` aborted with TS5108 before checking anything — and even had it run, the
+  config loaded no After Effects typings at all, leaving `app`, `CompItem` and
+  `Layer` as unresolved names. Both are fixed: a check-only tsconfig with a
+  target TypeScript still accepts, and a triple-slash reference to the AE
+  declarations in `global.d.ts` so every program including these sources picks
+  them up.
 - One-Click Expression Effects: bounce and elastic (ES3 text, compatible with
   both expression engines), plus Clear. The generated text is written in ES3 —
   `var`, no arrows, no template literals — because After Effects ships two
@@ -75,6 +106,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `@esTypes` resolved to a stub (`{ [key: string]: (...args: any) => any }`),
+  which made every `evalTS("name", ...)` call accept any name, any arguments and
+  return `any` — the one place where UI and host must agree was the one place
+  nothing checked that they did. It now points at `src/jsx`, whose `index.ts`
+  exports the host's real signatures, and `svelte-check` (installed but never
+  wired up) runs over the components that make those calls.
+- Release CI ordering: `yarn smoke` ran after `yarn zxp`, and both `build:debug`
+  and `zxp` begin with `rimraf dist/*` — so the checks would have deleted the
+  packaged `.zxp` before the upload step could attach it.
 - Anchor Point rejected shape and text layers: replace indirect `source`-based
   checks with matchName detection and empirical `sourceRectAtTime` validation;
   refusal messages now include matchName. Both symptoms came from one proxy —

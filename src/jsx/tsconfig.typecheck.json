@@ -1,0 +1,35 @@
+{
+  // Type-check-only config for the ExtendScript host.
+  //
+  // The build config next door declares `target: "es3"`, which TypeScript 5.5
+  // deprecated and 5.8 removed outright: `tsc -p tsconfig.json` now fails with
+  // TS5108 before checking a single file, which is why the host went unchecked
+  // while the panel did not. Lowering the build config's target is not an
+  // option — nothing in the emit pipeline reads it anyway (Babel's preset-env
+  // produces the ES3 output, and the bundle is verified by
+  // `scripts/check-host-es3.mjs`), but leaving it documents the target the host
+  // is actually held to.
+  //
+  // So the check runs from here instead: same files, same strictness, same
+  // ambient types, with a target TypeScript still accepts and no emit at all.
+  // ES5 is the lowest surviving target; it is more permissive than ES3 about
+  // syntax, so the ES3 guarantee comes from the bundle check rather than from
+  // this config.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "target": "es5",
+
+    // The host program reaches `cep.config.ts` through `shared/shared`, and that
+    // file imports package.json and pulls Node's type declarations in behind it.
+    // Under `noLib` those declarations reference lib types that do not exist
+    // here (Promise, Symbol, ArrayBuffer), producing ~1300 errors inside
+    // node_modules and none in our code. Both switches below exist purely to
+    // keep the check pointed at src/jsx; neither loosens what is checked there.
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  }
+}
+// The After Effects declarations themselves are pulled in by the triple-slash
+// reference at the top of `global.d.ts`, not by a `types` entry here, so the UI
+// build program gets them too when it reaches these sources through `@esTypes`.

@@ -32,7 +32,9 @@ export const map = <T>(
   arr: T[],
   callback: (item: T, i: number) => any
 ): T[] => {
-  let res = [];
+  // Annotated because an untyped `[]` infers `never[]` under `strict`, which
+  // then rejects every push into it.
+  let res: any[] = [];
   for (let i = 0; i < arr.length; i++) {
     res.push(callback(arr[i], i));
   }
@@ -43,7 +45,7 @@ export const filter = <T>(
   arr: T[],
   func: (item: T, i: number) => boolean
 ): T[] => {
-  let res = [];
+  let res: T[] = [];
   for (let i = 0; i < arr.length; i++) {
     if (func(arr[i], i)) {
       res.push(arr[i]);

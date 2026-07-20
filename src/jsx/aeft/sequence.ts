@@ -27,11 +27,11 @@
  */
 
 import {
-  SeqLayer,
   computeSequenceStartTimes,
   findSequenceOrder,
   resolveSequenceOrder,
 } from "../../shared/sequence";
+import type { SeqLayer } from "../../shared/sequence";
 
 export interface SequenceResult {
   applied: number;

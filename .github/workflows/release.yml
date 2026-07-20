@@ -4,6 +4,8 @@ on:
   push:
     tags: ["v*"]
 
+# Required for softprops/action-gh-release to create the release and attach the
+# .zxp; without it the upload fails with 403.
 permissions:
   contents: write
 
@@ -19,10 +21,48 @@ jobs:
         with:
           node-version: "20"
       - run: yarn install --frozen-lockfile
-      - run: yarn test
-      - run: yarn zxp
-      # Guard against symbol elision (P02a ReferenceError) before releasing.
-      - run: yarn smoke
+
+      # --- Correctness ------------------------------------------------------
+      - name: Unit tests
+        run: yarn test
+
+      - name: Type-check host (ExtendScript)
+        run: yarn typecheck:host
+
+      - name: Type-check UI (Svelte + evalTS bridge)
+        run: yarn typecheck:ui
+
+      # --- Bundle checks, on the unminified build ---------------------------
+      # The smoke test proves every symbol the UI imports has a real *binding* in
+      # the bundle (P02a/P02b). Minification renames those bindings, so it has to
+      # run against the debug build. These are the granular steps behind
+      # `yarn smoke`, split out so a failure names itself in the CI log.
+      - name: Build (debug, unminified)
+        run: yarn build:debug
+
+      - name: Smoke test bundle symbols
+        run: yarn smoke:bundle
+
+      - name: Check host bundle is ES3
+        run: yarn check:es3
+
+      # --- Release artifact --------------------------------------------------
+      # `yarn build` and `yarn zxp` each begin with `rimraf dist/*`, so they must
+      # come after every check that reads dist/. The previous order ran `yarn
+      # smoke` after `yarn zxp`, which now wipes the packaged .zxp before upload.
+      - name: Build (release, minified)
+        run: yarn build
+
+      - name: Package signed ZXP
+        run: yarn zxp
+
+      # Same rollup pass produces the host bundle in both builds, but re-checking
+      # after packaging asserts the ES3 guarantee against the artifact users
+      # actually install.
+      - name: Re-check ES3 on the packaged host bundle
+        run: yarn check:es3
+
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/zxp/*.zxp
+          generate_release_notes: true

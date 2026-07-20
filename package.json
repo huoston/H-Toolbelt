@@ -11,10 +11,16 @@
     "zip": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZIP_PACKAGE=true vite build --watch false",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke-bundle.mjs",
+    "smoke": "yarn build:debug && yarn smoke:bundle && yarn check:es3",
     "serve": "cross-env SERVE_PANEL=true vite preview",
     "symlink": "cross-env BOLT_ACTION=symlink vite",
-    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite"
+    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite",
+    "build:debug": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env BOLT_DEBUG_BUILD=true vite build --watch false",
+    "typecheck:host": "tsc -p src/jsx/tsconfig.typecheck.json",
+    "typecheck:ui": "svelte-check --tsconfig ./tsconfig-build.json --threshold error",
+    "typecheck": "yarn typecheck:host && yarn typecheck:ui",
+    "check:es3": "node scripts/check-host-es3.mjs",
+    "smoke:bundle": "node scripts/smoke-bundle.mjs"
   },
   "dependencies": {},
   "devDependencies": {
@@ -38,6 +44,8 @@
     "@types/fs-extra": "^9.0.13",
     "@types/node": "^16.11.7",
     "@types/trusted-types": "^2.0.2",
+    "acorn": "^8.17.0",
+    "acorn-walk": "^8.3.5",
     "babel-plugin-transform-scss": "^1.2.0",
     "babel-preset-env": "^1.7.0",
     "core-js": "3",

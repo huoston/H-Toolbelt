@@ -24,11 +24,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import {
-  ExpressionParams,
-  buildExpression,
-  findExpressionKind,
-} from "../../shared/expressions";
+import { buildExpression, findExpressionKind } from "../../shared/expressions";
+import type { ExpressionParams } from "../../shared/expressions";
 
 export interface ExpressionResult {
   applied: number;

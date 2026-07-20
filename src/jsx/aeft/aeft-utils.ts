@@ -40,7 +40,12 @@ export const compFromFootage = (item: FootageItem): CompItem => {
 export const getProjectDir = () => {
   app.project.file;
   if (app.project.file !== null) {
-    return app.project.file.parent;
+    // ExtendScript's File exposes `parent` (the containing Folder). This cast
+    // is not covering a real gap: it is needed only because the UI build pulls
+    // these host sources in for the `@esTypes` bridge, and that program loads
+    // lib.dom, whose unrelated web `File` shadows the ExtendScript one. The
+    // host's own type-check, which runs without lib.dom, does not need it.
+    return (app.project.file as unknown as { parent: unknown }).parent;
   } else {
     return "";
   }

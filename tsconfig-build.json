@@ -2,8 +2,24 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noImplicitAny": false,
+    // Point the bridge at the real host types. This used to resolve to a stub
+    // (`{ [key: string]: (...args: any) => any }`), which made every
+    // `evalTS("someName", ...)` call accept any name and any arguments and
+    // return `any` — the one place in the codebase where UI and host have to
+    // agree was the one place nothing checked that they did.
+    //
+    // `src/jsx/index.ts` exports `Scripts = typeof aeft`, so this gives the
+    // bridge the host's actual signatures.
     "paths": {
-      "@esTypes/*": ["./src/js/lib/cep/es-types"]
+      "@esTypes/*": ["./src/jsx"]
     }
-  }
+  },
+  // The base config excludes the host sources, but resolving `@esTypes` pulls
+  // them into this program anyway — as imported files, without their own
+  // `global.d.ts`, so the AE declarations it references would be missing and
+  // every `app` / `CompItem` in the host would error here. Including the
+  // directory outright brings that ambient file along with them.
+  // Not `[]`: emptying the base exclude would also unhide `dist`, and
+  // svelte-check would then diagnose the built bundles.
+  "exclude": ["dist", "node_modules"]
 }

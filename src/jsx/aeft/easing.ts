@@ -15,7 +15,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { bezierToTemporalEase, EaseSide, Bezier } from "../../shared/easing";
+import { bezierToTemporalEase } from "../../shared/easing";
+import type { EaseSide, Bezier } from "../../shared/easing";
 
 export interface ApplyEasingResult {
   applied: number;
