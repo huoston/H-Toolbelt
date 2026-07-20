@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Smart Anchor Point Control: 9-point grid, transform-aware position
+  compensation, guards against animated anchor/position. Moving a layer's anchor
+  moves the layer, because `position` is measured from the anchor; the
+  compensation sends the anchor delta through the scale and rotation matrix
+  (`position' = position + R * S * (A' - A)`), so the object stays visually
+  pinned at any scale or rotation — a naive delta sum is only correct at 100% /
+  0°. The math lives in the pure, unit-tested `shared/anchor` module. The host
+  refuses rather than guesses on: keyframed or expression-driven
+  anchor/position, keyframed scale/rotation (a one-off position write cannot
+  compensate a transform that changes over time), separated position dimensions,
+  3D layers with X/Y rotation or orientation, and layers with no usable source
+  rectangle. Shape groups are supported only where a group's bounding box is
+  actually derivable — one top-level group, unrotated — and refused with an
+  explicit reason otherwise, since After Effects exposes no per-group bounding
+  box. One undo group per operation.
+
 ### Changed
 
 - Remove `<svelte:boundary>` (masks mount-time errors in CEP's CEF); error

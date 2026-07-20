@@ -27,6 +27,7 @@
   import { EASING_PRESETS } from "../../shared/easing";
   import type { Bezier, EasingPreset } from "../../shared/easing";
   import CurveEditor from "./CurveEditor.svelte";
+  import AnchorGrid from "./AnchorGrid.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
@@ -101,27 +102,39 @@
 
   <section class="htb-tool">
     <h2 class="htb-tool-name">Easings</h2>
-    <div class="htb-grid">
-      {#each presets as preset (preset.label)}
-        <button
-          class="htb-preset"
-          class:htb-active={activeLabel === preset.label}
-          onclick={() => loadPreset(preset)}
-        >
-          {preset.label}
-        </button>
-      {/each}
-    </div>
 
-    <CurveEditor bind:bezier />
+    <!-- The curve editor is a fixed square; the presets and Apply sit beside it
+         and wrap underneath on a narrow panel instead of leaving dead space. -->
+    <div class="htb-easings">
+      <CurveEditor bind:bezier />
 
-    <div class="htb-actions">
-      <button class="htb-apply" disabled={busy} onclick={apply}>Apply</button>
+      <div class="htb-easings-side">
+        <div class="htb-grid">
+          {#each presets as preset (preset.label)}
+            <button
+              class="htb-preset"
+              class:htb-active={activeLabel === preset.label}
+              onclick={() => loadPreset(preset)}
+            >
+              {preset.label}
+            </button>
+          {/each}
+        </div>
+
+        <div class="htb-actions">
+          <button class="htb-apply" disabled={busy} onclick={apply}>Apply</button>
+        </div>
+      </div>
     </div>
 
     <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
       {feedback}
     </p>
+  </section>
+
+  <section class="htb-tool">
+    <h2 class="htb-tool-name">Anchor Point</h2>
+    <AnchorGrid />
   </section>
 </main>
 
@@ -146,6 +159,28 @@
     letter-spacing: 0.02em;
   }
 
+  // Sections stack with a rule between them so each tool reads as its own block.
+  .htb-tool + .htb-tool {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--htb-border, #3a3a3a);
+  }
+
+  .htb-easings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .htb-easings-side {
+    flex: 1 1 150px;
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .htb-tool-name {
     margin: 0 0 8px;
     font-size: 11px;
@@ -157,7 +192,9 @@
 
   .htb-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    // Fills the column beside the editor, collapsing to one per row when the
+    // panel is docked narrow.
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
     gap: 6px;
   }
 
@@ -197,7 +234,8 @@
   }
 
   .htb-actions {
-    margin-top: 10px;
+    // Spacing comes from the side column's flex gap.
+    margin-top: 0;
   }
 
   .htb-apply {
