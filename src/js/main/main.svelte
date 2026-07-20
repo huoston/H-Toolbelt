@@ -31,12 +31,14 @@
   import "../index.scss";
   import "./main.scss";
 
-  // Bind EASING_PRESETS into component scope and iterate this local in the
-  // markup. svelte-preprocess transpiles each <script> block in isolation, and
-  // TypeScript's import elision drops any import not referenced as a value in the
-  // script — an import used only in the template would be treated as unused and
-  // removed, producing `ReferenceError: EASING_PRESETS is not defined` on mount.
-  // Referencing it here keeps the import alive through the transpile.
+  // Local alias for the preset list, iterated by the markup below.
+  //
+  // This started life as a workaround for TypeScript's import elision (P02a):
+  // svelte-preprocess transpiles each <script> block in isolation, so an import
+  // referenced only in the template looked unused and was dropped. That class of
+  // bug is now killed structurally by `verbatimModuleSyntax: true` in the UI
+  // tsconfig, so this alias is no longer load-bearing — it is kept purely as a
+  // readable local. Do not reintroduce per-symbol guards for new imports.
   const presets = EASING_PRESETS;
 
   // The live curve shared with the editor. Presets load into it; drags flow back

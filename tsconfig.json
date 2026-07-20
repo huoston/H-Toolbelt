@@ -13,6 +13,14 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Emit imports exactly as written — never drop one because no value
+    // reference was found in the current file. svelte-preprocess transpiles each
+    // <script> block in isolation with ts.transpileModule, so a symbol used only
+    // in a component's template looks unused and is elided, producing
+    // `ReferenceError: <symbol> is not defined` on mount (P02a: EASING_PRESETS,
+    // P02b: CurveEditor). With this on, type-only imports must be marked
+    // `import type`, and value imports always survive to the bundle.
+    "verbatimModuleSyntax": true,
     "noEmit": true,
     "jsx": "preserve",
     "paths": {

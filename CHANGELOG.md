@@ -22,6 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `CurveEditor` elided by TS import elision (svelte-preprocess); enable
+  `verbatimModuleSyntax` on UI tsconfig; generalize bundle smoke test to cover
+  imported component symbols. The component was used only in `main.svelte`'s
+  template, so the per-block transpile dropped its import and the panel threw
+  `CurveEditor is not defined` on mount — the same class of failure as the
+  `EASING_PRESETS` fix below, which had only been patched per-symbol.
+  `verbatimModuleSyntax: true` on the UI tsconfig (not the ExtendScript host)
+  emits imports exactly as written, killing the whole class; type-only imports
+  are now marked `import type`. The smoke test previously passed on the broken
+  bundle because it checked only preset label tokens; it now derives the checked
+  symbols from the UI sources and asserts each has a real *definition* in the
+  bundle — a bare presence check would not catch this, since the compiled
+  template still contains the `CurveEditor(...)` call site after the definition
+  is elided.
 - `main.svelte`: import `EASING_PRESETS` from `shared/easing` (ReferenceError on
   mount). The preset list was used only in the `{#each}` template, so
   svelte-preprocess's isolated per-block TypeScript transpile elided the import as
