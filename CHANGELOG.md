@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Documentation: per-tool usage docs, known limitations, roadmap, issue
+  templates. `docs/` carries one page per tool — steps, options with their actual
+  defaults, and a table of every refusal message with its cause and remedy, taken
+  from the host sources rather than from memory. `LIMITATIONS.md` consolidates
+  what the tools deliberately will not do, including project-wide constraints
+  (self-signed `.zxp`, After Effects only, CEP rather than UXP, offline by
+  design). `ROADMAP.md` separates what is committed for v0.2.0 from what is
+  merely under consideration, with no dates. The bug template leads with the
+  message shown in the panel, since the refusals are written to be diagnostic.
+
 ## [0.1.0] - 2026-07-20
 
 First release. Four tools, each with its math in a pure, unit-tested module

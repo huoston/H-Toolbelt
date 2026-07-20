@@ -1,0 +1,16 @@
+# Blank issues stay enabled on purpose. The two templates cover the common cases,
+# but questions ("is this refusal expected?", "how do I do X") fit neither, and
+# forcing them into a bug report produces worse reports than letting them be
+# their own thing.
+blank_issues_enabled: true
+
+contact_links:
+  - name: Usage documentation
+    url: https://github.com/huoston/H-Toolbelt/blob/main/docs/README.md
+    about: How each tool works, its options, and what every refusal message means.
+  - name: Known limitations
+    url: https://github.com/huoston/H-Toolbelt/blob/main/LIMITATIONS.md
+    about: Cases the tools refuse on purpose — worth checking before filing a bug.
+  - name: Roadmap
+    url: https://github.com/huoston/H-Toolbelt/blob/main/ROADMAP.md
+    about: What is planned for the next release, and what is only being considered.

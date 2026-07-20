@@ -24,6 +24,16 @@ Planned for a later release:
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Shape Layer Magic** | Clean up and merge imported shape layers — After Effects 2026 imports SVG natively, and what it produces usually needs flattening, regrouping and tidying. |
 
+## Documentation
+
+| Page                                              | What it covers                                                                     |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Usage guides](./docs/README.md)                  | One page per tool: steps, options with their real defaults, and every refusal message. |
+| [Known limitations](./LIMITATIONS.md)             | What the tools deliberately will not do, and why.                                   |
+| [Roadmap](./ROADMAP.md)                           | What is committed for the next release, and what is only being considered.          |
+| [Changelog](./CHANGELOG.md)                       | What changed in each version.                                                       |
+| [Contributing](./CONTRIBUTING.md)                 | Building from source, the check suite, and how to submit changes.                   |
+
 ### Notes on behaviour
 
 - **Anchor Point — text layers:** the bounding box covers the glyphs actually
