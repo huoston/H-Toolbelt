@@ -115,9 +115,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Re-pivot now handles animated rotation/scale by resampling position per frame
-  (position keyframes are rebaked; original eases are replaced). Static case
-  remains exact. The tool no longer refuses the case it was built to point at.
+- Re-pivot now preserves the motion path: it shifts position keyframes by a
+  constant offset (evaluated at the current time) and moves the anchor, so eases
+  and path shape are kept and rotation/scale re-pivot around the new point.
+  Removed per-frame resampling.
+
+  The previous implementation optimised for the wrong invariant. It preserved
+  the rendered *pixels* at every frame, which for a layer with animated rotation
+  forces `position(t)` into an arc — describable only as one keyframe per frame,
+  with the original eases baked away. It was arithmetically sound and it was the
+  wrong thing: preserving the picture of a rotating layer means preserving the
+  old pivot, which is exactly what the user asked to change.
+
+  What a motion designer means by "move the anchor" is: the star keeps travelling
+  the same path, and now spins about a different point. That is what this does.
+  The offset `d = R(t_now)·S(t_now)·(A' − A)` is evaluated once, at the
+  composition's current time, and added to every position keyframe. Because it is
+  a single vector, distances and directions between keyframes are untouched — a
+  straight path stays straight — times and eases survive since only values are
+  written, and there is no jump at the frame the user is looking at when they
+  click. Away from that frame the render does change, and that is the feature.
+
+  One route now serves every layer, animated rotation or not, so `resampleLayer`,
+  the sampling grid, the drift measurement and the 3000-keyframe ceiling are all
+  gone, along with the refusal for expression-driven scale/rotation — that
+  existed only because resampling needed a bounded time range, and evaluating at
+  a single instant does not. A layer whose position has no keyframes has its
+  static value shifted instead. All safety guards are unchanged (expression on
+  position, animated anchor, separated dimensions, rotated 3D, camera/light), as
+  is idempotency. The keyframe count no longer changes at all, which is now
+  pinned by a regression test.
 
   Two routes, chosen by the host. With rotation and scale static the correction
   `R·S·(A' − A)` is one constant vector, so the existing keyframes are shifted

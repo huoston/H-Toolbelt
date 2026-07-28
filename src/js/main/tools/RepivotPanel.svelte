@@ -6,13 +6,11 @@
   purpose; the two sit side by side in the Transform tab, and the safe one stays
   safe.
 
-  Two routes, chosen by the host. With static rotation and scale the correction
-  is one constant vector and the existing keyframes are simply shifted — eases
-  intact. With animated rotation or scale the correction varies over time, so
-  position is resampled onto the frame grid: dense linear keyframes that
-  reproduce the motion but replace the original eases. The hint below says so
-  up front, and the feedback line reports the measured sub-frame drift, because
-  a trade the user cannot see is one they cannot judge.
+  One route for every layer: the host shifts the whole position track by a
+  single vector, evaluated at the current time, and moves the anchor. The path
+  keeps its shape and its eases, the keyframe count does not change, and a
+  rotating layer starts turning about the new point — which is what moving a
+  pivot is for.
 
   WHY THIS PANEL CARRIES ITS OWN GRID: AnchorPanel's 3x3 grid is not a
   presentational component — it calls `evalTS("setAnchorPoint", ...)` directly.
@@ -58,9 +56,8 @@
 
 <div class="htb-repivot">
   <p class="htb-repivot-hint">
-    Move the anchor of an animated layer, keeping the animation. Layers with
-    animated rotation or scale are resampled: position gets one keyframe per
-    frame and its original eases are replaced.
+    Move the anchor of an animated layer, keeping its motion path.
+    Rotation and scale now pivot around the new point.
   </p>
 
   <div class="htb-repivot-grid">
