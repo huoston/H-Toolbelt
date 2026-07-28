@@ -22,7 +22,7 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <script lang="ts">
-  import { evalTS } from "../lib/utils/bolt";
+  import { evalTS } from "../../lib/utils/bolt";
 
   let feedback: string = $state("");
   let isError: boolean = $state(false);

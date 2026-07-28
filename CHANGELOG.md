@@ -52,6 +52,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Panel reorganized into tabs (Motion, Transform, Shapes); tools migrated without
+  behavior change. The single scrolling column had stopped scaling at five tools
+  and would not have survived the Timing and Compositing work. Each tool is now a
+  self-contained component under `src/js/main/tools/`, reached only through its
+  tab; Easings was the last one still inline in `main.svelte` and moved out
+  verbatim, styles included — Svelte scopes styles per component, so left behind
+  they would simply have stopped applying. `src/jsx/**` and `src/shared/**` are
+  byte-identical: no host or shared logic was touched.
+
+  **Tab switching toggles CSS `display`; it never uses `{#if}`.** Two reasons,
+  neither cosmetic. State: the curve editor's hand-tuned bezier, the per-effect
+  expression parameters and the sequencing order all live in component state, and
+  a conditional block would reset them every time the user glanced at another
+  tab. Mounting: this panel has already been broken twice by mount-time failures
+  in CEP's CEF, and mounting every tool once on boot makes such a failure surface
+  immediately and identically for everyone rather than hiding behind a tab nobody
+  clicked. The bundle smoke test confirms all five tool components plus the tab
+  shell survive into the build, since componentizing moves symbols into templates
+  — exactly the elision pattern that caused P02a and P02b.
+
+  The tab list is data-driven from `src/js/main/tabs.ts`, so a new tab is one
+  entry. Compositing is deliberately absent until it has a tool: an empty tab
+  reads as a bug, not as a roadmap.
+
+- Roadmap rewritten around the tab structure, with the full plan: Loop Creator
+  and the Timing suite under Motion, and a Compositing tab grouped into
+  Grounding, Atmosphere, Depth and Sync. Records that every compositing tool must
+  verify its effect (Cycore, Lumetri) is present before applying and refuse by
+  name if not, and gives an implementation order by risk.
+
 - Repository history normalized to a single author. Commit messages carry no
   co-authorship trailers, and `CONTRIBUTING.md` states the rule for future
   commits. File contents are untouched: every commit's tree hash is identical to

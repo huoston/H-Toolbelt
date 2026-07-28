@@ -23,12 +23,12 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <script lang="ts">
-  import { evalTS } from "../lib/utils/bolt";
+  import { evalTS } from "../../lib/utils/bolt";
   import {
     EXPRESSION_DEFAULTS,
     EXPRESSION_KINDS,
-  } from "../../shared/expressions";
-  import type { ExpressionKind, ExpressionParams } from "../../shared/expressions";
+  } from "../../../shared/expressions";
+  import type { ExpressionKind, ExpressionParams } from "../../../shared/expressions";
 
   // One parameter set per effect, seeded from the shared defaults. Copies, so
   // edits here never mutate the shared constant.

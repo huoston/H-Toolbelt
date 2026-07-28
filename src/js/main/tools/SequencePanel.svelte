@@ -19,9 +19,9 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <script lang="ts">
-  import { evalTS } from "../lib/utils/bolt";
-  import { SEQUENCE_ORDERS } from "../../shared/sequence";
-  import type { SequenceOrder } from "../../shared/sequence";
+  import { evalTS } from "../../lib/utils/bolt";
+  import { SEQUENCE_ORDERS } from "../../../shared/sequence";
+  import type { SequenceOrder } from "../../../shared/sequence";
 
   let order: SequenceOrder = $state("timeline");
   let offsetFrames: number = $state(2);

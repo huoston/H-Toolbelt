@@ -18,8 +18,8 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <script lang="ts">
-  import { evalTS } from "../lib/utils/bolt";
-  import { ANCHOR_POINTS } from "../../shared/anchor";
+  import { evalTS } from "../../lib/utils/bolt";
+  import { ANCHOR_POINTS } from "../../../shared/anchor";
 
   let feedback: string = $state("");
   let isError: boolean = $state(false);
