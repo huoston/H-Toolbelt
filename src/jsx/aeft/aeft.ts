@@ -24,6 +24,8 @@ import { cleanAll, removeArtboardRect, removeEmptyGroups } from "./shape";
 export { cleanAll, removeArtboardRect, removeEmptyGroups };
 import { applyLoop } from "./loop";
 export { applyLoop };
+import { repivotAnimated } from "./repivot";
+export { repivotAnimated };
 
 export const helloWorld = () => {
   alert("Hello from After Effects!");

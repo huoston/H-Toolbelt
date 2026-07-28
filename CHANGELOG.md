@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Re-pivot (Transform tab): change the anchor of a layer with animated position
+  by re-baking position keyframes; refuses cases with animated scale/rotation.
+  This is exactly the case Smart Anchor Point declines — that tool performs a
+  single position write, which cannot compensate a value that changes over time.
+  Both now sit in the Transform tab and the safe one is unchanged.
+
+  **Why only static scale and rotation are exact.** Keeping `comp(p, t) =
+  position(t) + R(t)·S(t)·(p − A)` identical while the anchor moves to `A'`
+  requires `position'(t) = position(t) + R(t)·S(t)·(A' − A)`. With `R` and `S`
+  constant that correction is one fixed vector, so adding it to every keyframe
+  translates the motion path rigidly — and since the interpolation between two
+  shifted keyframes is the shifted interpolation, the result is exact at every
+  frame, not merely at the keyframes. If `R` or `S` are animated the correct
+  offset varies with time, so writing one value per existing keyframe would be
+  right at those instants and wrong between them: the layer drifts mid-tween
+  while looking perfect wherever the user parks the playhead to check. That is
+  refused, pointing at the manual technique that does work (parent to a null).
+
+  Only keyframe *values* are written, via `setValueAtTime` at each keyframe's
+  existing time, so times, interpolation and eases stay as the user set them;
+  spatial tangents are relative to their keyframe, so the path translates with
+  its handles intact. Every keyframe is read before any is written. Also refused:
+  animated or expression-driven anchor, an expression on position (it would
+  override the writes, so the tool would report success while changing nothing),
+  separated position dimensions, rotated 3D, and layers with no usable bounds —
+  each naming the layer and its `matchName`. Re-running against the same target
+  computes a zero correction and is skipped rather than rewriting every keyframe
+  with the value it already holds.
+
+  The matrix maths is imported from `shared/anchor` unchanged — the offset is
+  `computeAnchorMove` called with a zero current position, which makes its
+  `newPosition` the bare correction term. Re-baking lives in the new pure,
+  unit-tested `shared/repivot`, whose tests verify the layer stays pinned at
+  several probe points across scale, rotation and negative-scale cases, not just
+  at the anchor.
+
 - Loop Creator (Motion tab): cycle/ping-pong/offset/continue loop expressions
   with direction and keyframe count; reuses expression Clear. The lowest-risk
   tool of the new batch — it mirrors Expression Effects exactly (pure tested

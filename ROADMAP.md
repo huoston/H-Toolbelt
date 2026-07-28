@@ -16,7 +16,7 @@ The panel is organised into tabs, so this document is too.
 | Tab             | Shipped                                 | Next up                          |
 | --------------- | --------------------------------------- | -------------------------------- |
 | **Motion**      | Easings, Sequencing, Expression Effects | Loop Creator, then Timing suite  |
-| **Transform**   | Anchor Point                            | —                                |
+| **Transform**   | Anchor Point, Re-pivot *(built)*        | —                                |
 | **Shapes**      | Shape Layer Magic v1 *(built)*          | —                                |
 | **Compositing** | — *(tab not shown until its first tool)*| Grounding, Atmosphere, Depth     |
 
@@ -62,6 +62,20 @@ The panel is organised into tabs, so this document is too.
 - **Smart Anchor Point** — nine bounding-box anchor positions with `position`
   compensated through the transform matrix, so nothing moves on screen at any
   scale or rotation.
+
+### Built — lands in v0.2.0
+
+- **Re-pivot** — moves the anchor of a layer whose **position is animated**,
+  re-baking every position keyframe so the animation stays visually identical.
+  The case Smart Anchor Point refuses, answered by a separate tool rather than by
+  loosening the safe one.
+
+  Exact only where the correction is a constant vector: position animated,
+  anchor/scale/rotation static. **Animated scale or rotation is refused** — the
+  correct offset would vary with time, so baking one value per keyframe would
+  drift between them while looking right wherever you scrub. Use a null parent
+  for those, which is why handling them automatically stays under *considering*
+  rather than being promised here.
 
 ---
 
@@ -149,6 +163,12 @@ Not commitments. Roughly in order of how likely they are to happen.
   into path data rather than groups collapsed, since a group scopes its fills and
   its Trim/Merge/Offset/Repeater operators — an identity transform does not make
   it a no-op. Real geometry work, not a follow-up patch.
+- **Re-pivot for layers with animated scale or rotation.** Currently refused,
+  because the correction term varies with time and cannot be baked into the
+  existing keyframes without drifting between them. Doing it properly means
+  either resampling position at every frame — which destroys the user's keyframe
+  structure — or creating and animating a null parent, which is a different tool
+  with its own consent question. Both are real designs, neither is a patch.
 - **3D rotation support in Anchor Point.** Currently refused for 3D layers with
   X/Y rotation or orientation, because the compensation covers 2-D transforms and
   Z rotation. Extending it to the full 3-D transform is tractable, just not done.
