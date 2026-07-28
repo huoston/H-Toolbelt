@@ -115,6 +115,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Re-pivot now handles animated rotation/scale by resampling position per frame
+  (position keyframes are rebaked; original eases are replaced). Static case
+  remains exact. The tool no longer refuses the case it was built to point at.
+
+  Two routes, chosen by the host. With rotation and scale static the correction
+  `R·S·(A' − A)` is one constant vector, so the existing keyframes are shifted
+  and times, interpolation and eases all survive — unchanged from before, and
+  still preferred whenever it applies. With rotation or scale animated the
+  correction varies with time, so `position'(t)` is evaluated on the frame grid
+  across the animated range and written back as dense linear keyframes.
+
+  What that guarantees, precisely: **exact at every sampled time**, and since
+  After Effects renders at frame times, exact at every rendered frame. Between
+  samples the reconstruction is linear while the true correction curves, leaving
+  a sub-frame deviation that only shows up where AE evaluates off-frame — motion
+  blur, or a time-stretched or time-remapped nested comp. That residual is
+  second-order in the step, so halving the interval quarters it; measured on a
+  deliberately harsh synthetic case (180°/s rotation, scale swinging 40–160%, a
+  curved position path) it runs 1.74px at 12fps, 0.44px at 24fps, 0.07px at
+  60fps. The host measures it at the midpoint of every interval and reports the
+  worst one in the feedback line rather than asserting it is negligible.
+
+  **The cost is real and is stated in the panel:** the sampled route replaces
+  position keyframes with one per frame, so the original eases are baked into
+  the values instead of surviving as curve handles. New keyframes are forced to
+  linear, temporally and spatially — bezier or auto-bezier between one-frame
+  samples would overshoot and invalidate the very number being reported.
+
+  A layer with **static position and animated rotation** — a spinning star — has
+  no position keyframes at all, and was being turned away by the "not animated"
+  guard. That check now tests position, scale and rotation together, since
+  testing position alone rejected exactly the layers this change is for.
+
+  Every sample is read before anything is written, since the first write to
+  position would change what later reads returned. New refusal: an expression on
+  scale or rotation, which would make the correction vary across the whole
+  timeline rather than a bounded keyframe range — resampling the entire comp is
+  far more than was asked for, so it says to bake the expression first. A range
+  needing more than 3000 keyframes is refused by frame count rather than sampled
+  coarser, which would silently inflate the deviation. The existing guards
+  (expression on position, animated anchor, separated dimensions, rotated 3D,
+  camera/light) are unchanged, as is idempotency: a second run against the same
+  target computes a zero correction and is skipped.
+
 - Panel reorganized into tabs (Motion, Transform, Shapes); tools migrated without
   behavior change. The single scrolling column had stopped scaling at five tools
   and would not have survived the Timing and Compositing work. Each tool is now a

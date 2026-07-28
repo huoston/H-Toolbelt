@@ -24,10 +24,16 @@ import { describe, it, expect } from "vitest";
 import { computeAnchorMove, type Vec2 } from "./anchor";
 import {
   OFFSET_EPSILON,
+  buildResampledValues,
+  buildSampleTimes,
+  compensatedPositionAt,
   isZeroOffset,
+  maxLinearDrift,
   offsetPositionValue,
   rebakePositionKeys,
+  requiredSampleCount,
   type PositionKey,
+  type TransformSample,
 } from "./repivot";
 
 const keys2d = (): PositionKey[] => [
@@ -225,5 +231,261 @@ describe("re-baking against computeAnchorMove — the whole point", () => {
     const offset = computeAnchorMove(anchor, [0, 0], anchor, [130, 70], 25)
       .newPosition;
     expect(isZeroOffset(offset)).toBe(true);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Sampled variant                                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Where a layer-space point lands in comp space, for a given transform. */
+const project = (
+  p: Vec2,
+  position: number[],
+  anchor: Vec2,
+  scale: Vec2,
+  rotationDeg: number
+): Vec2 => {
+  const dx = (p[0] - anchor[0]) * (scale[0] / 100);
+  const dy = (p[1] - anchor[1]) * (scale[1] / 100);
+  const t = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(t);
+  const sin = Math.sin(t);
+  return [
+    position[0] + dx * cos - dy * sin,
+    position[1] + dx * sin + dy * cos,
+  ];
+};
+
+/**
+ * A synthetic animation with genuinely time-varying rotation and scale, plus a
+ * curved position path — the case the exact route cannot handle.
+ */
+const sampleAt = (time: number): TransformSample => ({
+  time,
+  position: [200 + 120 * Math.sin(time * 2), 150 + 80 * time * time],
+  scale: [100 + 60 * Math.sin(time), 100 + 30 * time],
+  rotation: 180 * time,
+});
+
+const gridSamples = (times: number[]): TransformSample[] => {
+  const out: TransformSample[] = [];
+  for (const t of times) out.push(sampleAt(t));
+  return out;
+};
+
+const midpointSamples = (times: number[]): TransformSample[] => {
+  const out: TransformSample[] = [];
+  for (let i = 0; i < times.length - 1; i++) {
+    out.push(sampleAt((times[i] + times[i + 1]) / 2));
+  }
+  return out;
+};
+
+describe("compensatedPositionAt", () => {
+  const anchor: Vec2 = [40, 90];
+  const target: Vec2 = [0, 0];
+
+  it("pins the layer exactly at any single instant, whatever R and S are", () => {
+    // The per-sample guarantee: at each sampled time the compensation is the
+    // closed form, so it is exact there regardless of how fast R and S vary.
+    const probes: Vec2[] = [
+      [0, 0],
+      [40, 90],
+      [-150, 220],
+    ];
+
+    for (let k = 0; k <= 20; k++) {
+      const s = sampleAt(k / 10);
+      const compensated = compensatedPositionAt(
+        s.position,
+        anchor,
+        target,
+        s.scale,
+        s.rotation
+      );
+
+      for (const p of probes) {
+        const before = project(p, s.position, anchor, s.scale, s.rotation);
+        const after = project(p, compensated, target, s.scale, s.rotation);
+        expect(after[0]).toBeCloseTo(before[0], 9);
+        expect(after[1]).toBeCloseTo(before[1], 9);
+      }
+    }
+  });
+
+  it("agrees with the constant-offset path when R and S are static", () => {
+    // The two routes must not disagree: a layer whose rotation happens to be
+    // constant should get the same numbers from either code path.
+    const scale: Vec2 = [140, 65];
+    const rotation = 33;
+    const position = [310, -45];
+
+    const viaSample = compensatedPositionAt(
+      position,
+      anchor,
+      target,
+      scale,
+      rotation
+    );
+    const offset = computeAnchorMove(anchor, [0, 0], target, scale, rotation)
+      .newPosition;
+    const viaOffset = offsetPositionValue(position, offset);
+
+    expect(viaSample[0]).toBeCloseTo(viaOffset[0], 12);
+    expect(viaSample[1]).toBeCloseTo(viaOffset[1], 12);
+  });
+
+  it("carries z through on a 3-D position", () => {
+    const result = compensatedPositionAt(
+      [10, 20, 300],
+      anchor,
+      target,
+      [100, 100],
+      0
+    );
+    expect(result[2]).toBe(300);
+  });
+});
+
+describe("buildSampleTimes / requiredSampleCount", () => {
+  const FD = 1 / 24;
+
+  it("spans the range inclusively at both ends", () => {
+    const times = buildSampleTimes(0, 1, FD);
+    expect(times[0]).toBe(0);
+    expect(times[times.length - 1]).toBe(1);
+  });
+
+  it("produces one sample per frame", () => {
+    expect(buildSampleTimes(0, 1, FD).length).toBe(25); // 24 intervals
+    expect(buildSampleTimes(0, 0.5, FD).length).toBe(13);
+  });
+
+  it("keeps the step within float tolerance of one frame", () => {
+    const times = buildSampleTimes(0.5, 2.5, FD);
+    for (let i = 1; i < times.length; i++) {
+      expect(times[i] - times[i - 1]).toBeCloseTo(FD, 9);
+    }
+  });
+
+  it("never goes backwards or repeats a time", () => {
+    const times = buildSampleTimes(1.234, 3.456, 1 / 29.97);
+    for (let i = 1; i < times.length; i++) {
+      expect(times[i]).toBeGreaterThan(times[i - 1]);
+    }
+  });
+
+  it("collapses a zero-length range to one sample", () => {
+    expect(buildSampleTimes(2, 2, FD)).toEqual([2]);
+  });
+
+  it("refuses nonsense rather than looping forever", () => {
+    expect(buildSampleTimes(0, 1, 0)).toEqual([]);
+    expect(buildSampleTimes(0, 1, -1)).toEqual([]);
+    expect(buildSampleTimes(5, 1, FD)).toEqual([]);
+    expect(buildSampleTimes(NaN, 1, FD)).toEqual([]);
+  });
+
+  it("reports the count the host checks against its cap", () => {
+    expect(requiredSampleCount(0, 1, FD)).toBe(25);
+    expect(requiredSampleCount(0, 10, FD)).toBe(241);
+    expect(requiredSampleCount(2, 2, FD)).toBe(1);
+    expect(requiredSampleCount(0, 1, 0)).toBe(0);
+  });
+});
+
+describe("resampled track — accuracy", () => {
+  const anchor: Vec2 = [40, 90];
+  const target: Vec2 = [0, 0];
+
+  it("is exact at every sampled time", () => {
+    const times = buildSampleTimes(0, 2, 1 / 24);
+    const samples = gridSamples(times);
+    const values = buildResampledValues(samples, anchor, target);
+
+    const probe: Vec2 = [-150, 220];
+    for (let i = 0; i < samples.length; i++) {
+      const s = samples[i];
+      const before = project(probe, s.position, anchor, s.scale, s.rotation);
+      const after = project(probe, values[i], target, s.scale, s.rotation);
+      expect(after[0]).toBeCloseTo(before[0], 9);
+      expect(after[1]).toBeCloseTo(before[1], 9);
+    }
+  });
+
+  it("produces one value per sample", () => {
+    const times = buildSampleTimes(0, 1, 1 / 24);
+    expect(buildResampledValues(gridSamples(times), anchor, target).length).toBe(
+      times.length
+    );
+  });
+
+  it("keeps sub-frame drift below a pixel at 24fps", () => {
+    const times = buildSampleTimes(0, 2, 1 / 24);
+    const values = buildResampledValues(gridSamples(times), anchor, target);
+    const drift = maxLinearDrift(
+      values,
+      midpointSamples(times),
+      anchor,
+      target
+    );
+    expect(drift).toBeLessThan(1);
+  });
+
+  it("shrinks quadratically as the grid gets finer", () => {
+    // The deviation is second-order in the step, so halving the interval should
+    // quarter it. This is the property that justifies per-frame sampling instead
+    // of an arbitrary density: it says the error is controlled, not just small
+    // in one example.
+    const driftAt = (frameDuration: number): number => {
+      const times = buildSampleTimes(0, 2, frameDuration);
+      const values = buildResampledValues(gridSamples(times), anchor, target);
+      return maxLinearDrift(values, midpointSamples(times), anchor, target);
+    };
+
+    const coarse = driftAt(1 / 12);
+    const fine = driftAt(1 / 24);
+    const finer = driftAt(1 / 48);
+
+    expect(fine).toBeLessThan(coarse);
+    expect(finer).toBeLessThan(fine);
+    // Ratio near 4; allow slack since the worst interval can move between grids.
+    expect(coarse / fine).toBeGreaterThan(3);
+    expect(fine / finer).toBeGreaterThan(3);
+  });
+
+  it("reports essentially zero drift when nothing curves", () => {
+    // Static transform and a straight, linearly-timed position: linear
+    // reconstruction is then the exact answer everywhere, not an approximation.
+    const times = buildSampleTimes(0, 1, 1 / 24);
+    const flat: TransformSample[] = [];
+    for (const t of times) {
+      flat.push({
+        time: t,
+        position: [100 + 50 * t, 200 - 30 * t],
+        scale: [100, 100],
+        rotation: 0,
+      });
+    }
+    const mids: TransformSample[] = [];
+    for (let i = 0; i < times.length - 1; i++) {
+      const t = (times[i] + times[i + 1]) / 2;
+      mids.push({
+        time: t,
+        position: [100 + 50 * t, 200 - 30 * t],
+        scale: [100, 100],
+        rotation: 0,
+      });
+    }
+
+    const values = buildResampledValues(flat, anchor, target);
+    expect(maxLinearDrift(values, mids, anchor, target)).toBeLessThan(1e-9);
+  });
+
+  it("survives empty and degenerate input", () => {
+    expect(buildResampledValues([], anchor, target)).toEqual([]);
+    expect(maxLinearDrift([], [], anchor, target)).toBe(0);
+    expect(maxLinearDrift([[0, 0]], [], anchor, target)).toBe(0);
   });
 });

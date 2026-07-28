@@ -70,12 +70,17 @@ The panel is organised into tabs, so this document is too.
   The case Smart Anchor Point refuses, answered by a separate tool rather than by
   loosening the safe one.
 
-  Exact only where the correction is a constant vector: position animated,
-  anchor/scale/rotation static. **Animated scale or rotation is refused** — the
-  correct offset would vary with time, so baking one value per keyframe would
-  drift between them while looking right wherever you scrub. Use a null parent
-  for those, which is why handling them automatically stays under *considering*
-  rather than being promised here.
+  Two routes. With rotation and scale **static** the correction is a constant
+  vector, so the existing keyframes are shifted and eases survive — exact
+  everywhere. With rotation or scale **animated** the correction varies with
+  time, so position is **resampled onto the frame grid**: exact at every rendered
+  frame, with a measured sub-frame deviation reported in the panel. The cost is
+  that position becomes one keyframe per frame and its original eases are
+  replaced, which is why the exact route is still used whenever it applies.
+
+  No null parenting, and no refusal for animated rotation — the anchor of the
+  layer itself moves. Still refused: an expression on position, scale or
+  rotation, an animated anchor, separated position dimensions, and rotated 3D.
 
 ---
 
@@ -163,12 +168,12 @@ Not commitments. Roughly in order of how likely they are to happen.
   into path data rather than groups collapsed, since a group scopes its fills and
   its Trim/Merge/Offset/Repeater operators — an identity transform does not make
   it a no-op. Real geometry work, not a follow-up patch.
-- **Re-pivot for layers with animated scale or rotation.** Currently refused,
-  because the correction term varies with time and cannot be baked into the
-  existing keyframes without drifting between them. Doing it properly means
-  either resampling position at every frame — which destroys the user's keyframe
-  structure — or creating and animating a null parent, which is a different tool
-  with its own consent question. Both are real designs, neither is a patch.
+- **Re-pivot without losing eases on the resampled route.** Animated
+  rotation/scale is handled now, but by replacing position with one keyframe per
+  frame. Keeping the user's original keyframe structure would mean solving for
+  new eases that reproduce the compensated curve, rather than sampling it — a
+  genuinely harder problem, and only worth it if the dense track proves annoying
+  in practice.
 - **3D rotation support in Anchor Point.** Currently refused for 3D layers with
   X/Y rotation or orientation, because the compensation covers 2-D transforms and
   Z rotation. Extending it to the full 3-D transform is tractable, just not done.

@@ -1,10 +1,18 @@
 <!--
   H-Toolbelt — Re-pivot.
 
-  Moves the anchor of a layer whose position is animated, re-baking every
-  position keyframe so the animation stays visually identical. This is the case
-  Smart Anchor Point refuses on purpose; the two sit side by side in the
-  Transform tab, and the safe one stays safe.
+  Moves the anchor of an animated layer, compensating position so the animation
+  stays visually identical. This is the case Smart Anchor Point refuses on
+  purpose; the two sit side by side in the Transform tab, and the safe one stays
+  safe.
+
+  Two routes, chosen by the host. With static rotation and scale the correction
+  is one constant vector and the existing keyframes are simply shifted — eases
+  intact. With animated rotation or scale the correction varies over time, so
+  position is resampled onto the frame grid: dense linear keyframes that
+  reproduce the motion but replace the original eases. The hint below says so
+  up front, and the feedback line reports the measured sub-frame drift, because
+  a trade the user cannot see is one they cannot judge.
 
   WHY THIS PANEL CARRIES ITS OWN GRID: AnchorPanel's 3x3 grid is not a
   presentational component — it calls `evalTS("setAnchorPoint", ...)` directly.
@@ -50,7 +58,9 @@
 
 <div class="htb-repivot">
   <p class="htb-repivot-hint">
-    Move the anchor of an animated layer, keeping the animation.
+    Move the anchor of an animated layer, keeping the animation. Layers with
+    animated rotation or scale are resampled: position gets one keyframe per
+    frame and its original eases are replaced.
   </p>
 
   <div class="htb-repivot-grid">

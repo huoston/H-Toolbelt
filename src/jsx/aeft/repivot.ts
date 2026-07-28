@@ -23,18 +23,37 @@
  * and the interpolation between two shifted keyframes is the shifted
  * interpolation — so the result is exact at every frame, not just at keyframes.
  *
- * If `R` or `S` are animated, the correct offset varies with time. Writing a
- * single value at each existing keyframe would then be right at those instants
- * and wrong between them: the layer drifts mid-tween while looking perfect
- * wherever the user parks the playhead to check. That is a worse outcome than
- * refusing, so it is refused, with a pointer to the manual technique that does
- * work (parent to a null and animate the null).
+ * If `R` or `S` are animated the correct offset varies with time, so there is no
+ * single vector to add. That case takes the second route: **resampling**.
  *
- * WHAT IS PRESERVED. Only keyframe *values* are written, via `setValueAtTime` at
- * each keyframe's existing time, so times, interpolation types and eases stay as
- * the user set them. Spatial tangents are relative to the keyframe, so the motion
- * path translates with its handles intact rather than being flattened. Nothing
- * here touches `inPoint`, `outPoint` or `startTime`.
+ * THE TWO ROUTES.
+ *
+ *   - **Exact** (rotation and scale static). One constant vector shifts the
+ *     existing position keyframes. Times, interpolation and eases survive
+ *     untouched, because only values are written. Cheap, and preferred whenever
+ *     it applies.
+ *   - **Sampled** (rotation or scale animated). `position'(t)` is evaluated on
+ *     the frame grid across the animated range and written back as dense linear
+ *     keyframes. Exact at every sampled time — and After Effects renders at
+ *     frame times, so every rendered frame is exact. Between samples the
+ *     reconstruction is linear while the true correction curves, leaving a
+ *     sub-frame deviation that shows up only where AE evaluates off-frame
+ *     (motion blur, a time-stretched or time-remapped nested comp). The host
+ *     measures that deviation at the midpoint of every interval and reports the
+ *     worst one instead of claiming it is negligible.
+ *
+ * THE COST OF THE SAMPLED ROUTE, STATED PLAINLY: it replaces the user's position
+ * keyframes with one per frame. The motion is reproduced, but the original eases
+ * are gone — baked into the sampled values rather than surviving as curve
+ * handles. That is the price of keeping a layer pinned while rotation varies,
+ * and it is why the exact route is still taken whenever it can be.
+ *
+ * A LAYER WITH STATIC POSITION AND ANIMATED ROTATION IS THE HEADLINE CASE, and
+ * it has no position keyframes at all. The "not animated" refusal therefore
+ * tests position, scale and rotation together — testing position alone would
+ * turn away exactly the layers this tool was extended for.
+ *
+ * Nothing here touches `inPoint`, `outPoint` or `startTime`.
  *
  * IDEMPOTENT. A second run against the same target computes a zero correction —
  * the anchor is already there — and is skipped rather than rewriting every
@@ -60,8 +79,15 @@ import {
   findAnchorPoint,
 } from "../../shared/anchor";
 import type { AnchorPointSpec, SourceRect, Vec2 } from "../../shared/anchor";
-import { isZeroOffset, rebakePositionKeys } from "../../shared/repivot";
-import type { PositionKey } from "../../shared/repivot";
+import {
+  buildResampledValues,
+  buildSampleTimes,
+  isZeroOffset,
+  maxLinearDrift,
+  rebakePositionKeys,
+  requiredSampleCount,
+} from "../../shared/repivot";
+import type { PositionKey, TransformSample } from "../../shared/repivot";
 
 export interface RepivotResult {
   applied: number;
@@ -96,6 +122,18 @@ const BOUNDED_LAYER_TYPES = [MN_LAYER_VECTOR, MN_LAYER_TEXT, MN_LAYER_AV];
 
 const NO_COMP_MESSAGE = "Open a composition first.";
 const NO_SELECTION_MESSAGE = "Select an animated layer first.";
+
+/**
+ * Ceiling on how many position keyframes a resample may write.
+ *
+ * Not an arithmetic limit — a limit on what is reasonable to do to someone's
+ * project. Ten seconds at 24fps is 241 keyframes, which is already a dense but
+ * workable track; a two-minute range at 60fps would be 7200 and would make the
+ * property unusable in the timeline. Past this the tool refuses and says so,
+ * rather than quietly sampling coarser, which would inflate the deviation this
+ * tool exists to keep small.
+ */
+const MAX_RESAMPLE_KEYS = 3000;
 
 /* -------------------------------------------------------------------------- */
 /* Refusal accumulation                                                        */
@@ -132,12 +170,22 @@ const predominantReason = (log: SkipLog): string => {
   return log.reasons.length > 0 ? log.reasons[best] : "";
 };
 
-const buildMessage = (applied: number, log: SkipLog): string => {
+const buildMessage = (
+  applied: number,
+  resampled: number,
+  worstDrift: number,
+  log: SkipLog
+): string => {
   if (applied === 0 && log.total === 0) return NO_SELECTION_MESSAGE;
   if (applied === 0) {
     return "Skipped " + log.total + " layer(s): " + predominantReason(log);
   }
   let msg = "Re-pivoted " + applied + " layer(s)";
+  if (resampled > 0) {
+    // Naming the measured deviation rather than claiming it is negligible: the
+    // number is what the user needs to judge whether the trade was worth it.
+    msg += " (resampled, max drift " + formatDrift(worstDrift) + "px)";
+  }
   if (log.total > 0) {
     msg += "; skipped " + log.total + ": " + predominantReason(log);
   }
@@ -268,28 +316,188 @@ const probeRefusal = (probe: RectProbe, mn: string): string | null => {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Sampling and keyframe surgery                                              */
+/* -------------------------------------------------------------------------- */
+
+/** The time span a property's keyframes cover, or null when it has none. */
+interface KeyRange {
+  t0: number;
+  t1: number;
+}
+
+const keyRange = (p: Property | null): KeyRange | null => {
+  const n = keyCount(p);
+  if (!p || n < 1) return null;
+  try {
+    return { t0: p.keyTime(1), t1: p.keyTime(n) };
+  } catch (e) {
+    return null;
+  }
+};
+
+/** Widen `range` to also cover `other`. Either may be null. */
+const unionRange = (
+  range: KeyRange | null,
+  other: KeyRange | null
+): KeyRange | null => {
+  if (!other) return range;
+  if (!range) return { t0: other.t0, t1: other.t1 };
+  return {
+    t0: range.t0 < other.t0 ? range.t0 : other.t0,
+    t1: range.t1 > other.t1 ? range.t1 : other.t1,
+  };
+};
+
+/**
+ * Value at a time, post-expression.
+ *
+ * Post-expression is deliberate for scale and rotation: what has to be
+ * compensated is the transform After Effects actually renders, not the
+ * keyframed value an expression may be overriding. Position carries no
+ * expression here — that is refused — so the distinction does not arise for it.
+ */
+const vecAtTime = (p: Property | null, t: number): number[] | null => {
+  if (!p) return null;
+  try {
+    const v = p.valueAtTime(t, false) as unknown as number[];
+    return v instanceof Array ? v : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const numAtTime = (
+  p: Property | null,
+  t: number,
+  fallback: number
+): number => {
+  if (!p) return fallback;
+  try {
+    const v = p.valueAtTime(t, false) as unknown as number;
+    return typeof v === "number" && isFinite(v) ? v : fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
+/** Read the whole transform at one instant. Null when position is unreadable. */
+const sampleTransform = (
+  positionProp: Property,
+  scaleProp: Property | null,
+  rotationProp: Property | null,
+  t: number
+): TransformSample | null => {
+  const position = vecAtTime(positionProp, t);
+  if (!position) return null;
+
+  const scaleVec = vecAtTime(scaleProp, t);
+  return {
+    time: t,
+    position: position,
+    scale: scaleVec ? [scaleVec[0], scaleVec[1]] : [100, 100],
+    rotation: numAtTime(rotationProp, t, 0),
+  };
+};
+
+/** Delete every keyframe, last first so indices stay valid as we go. */
+const clearKeys = (p: Property): void => {
+  for (let i = keyCount(p); i >= 1; i--) {
+    try {
+      p.removeKey(i);
+    } catch (e) {
+      // Not removable; leave it rather than abort the whole run.
+    }
+  }
+};
+
+/**
+ * Make every keyframe linear, temporally and spatially.
+ *
+ * Temporal linearity is what makes the reconstruction match what was measured:
+ * the deviation figure reported to the user assumes straight interpolation
+ * between samples, so bezier keyframes would overshoot and quietly invalidate
+ * it. Spatial tangents are zeroed for the same reason — auto-bezier would bow
+ * the path between samples that are already one frame apart.
+ *
+ * Best-effort per key: a property that rejects spatial tangents (a non-spatial
+ * position) still gets its temporal interpolation set.
+ */
+const linearizeKeys = (p: Property, dimensions: number): void => {
+  const n = keyCount(p);
+  for (let i = 1; i <= n; i++) {
+    try {
+      p.setInterpolationTypeAtKey(
+        i,
+        KeyframeInterpolationType.LINEAR,
+        KeyframeInterpolationType.LINEAR
+      );
+    } catch (e) {
+      // Interpolation type rejected; the sampled values are still correct.
+    }
+    try {
+      // The tangent arity has to match the property's dimensionality, so the
+      // two cases are written out rather than built from a variable-length
+      // array the typings cannot check.
+      if (dimensions > 2) {
+        p.setSpatialTangentsAtKey(i, [0, 0, 0], [0, 0, 0]);
+      } else {
+        p.setSpatialTangentsAtKey(i, [0, 0], [0, 0]);
+      }
+    } catch (e) {
+      // Not a spatial property, or tangents rejected.
+    }
+  }
+};
+
+/** "0.44" / "<0.01" — never exponent notation in a user-facing message. */
+const formatDrift = (d: number): string => {
+  if (typeof d !== "number" || !isFinite(d) || d <= 0) return "0";
+  if (d < 0.01) return "<0.01";
+  return String(Math.round(d * 100) / 100);
+};
+
+/* -------------------------------------------------------------------------- */
 /* Apply                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/** What happened to one layer. */
+interface LayerOutcome {
+  /** Null on success, or the refusal reason. */
+  reason: string | null;
+  /** Whether the sampled route was taken rather than the exact one. */
+  resampled: boolean;
+  /** Worst measured sub-frame deviation, in pixels. Zero on the exact route. */
+  drift: number;
+}
+
+const refuse = (reason: string): LayerOutcome => {
+  return { reason: reason, resampled: false, drift: 0 };
+};
+
 /**
- * Re-pivot every selected layer whose position is animated.
+ * Re-pivot one selected layer.
  *
- * Returns null on success for a layer, or the refusal reason.
+ * Two routes. When rotation and scale are static the correction is a constant
+ * vector and the existing position keyframes are simply shifted — exact, cheap,
+ * and it preserves the user's eases. When either is animated the correction
+ * varies with time, so position is resampled onto the frame grid instead. The
+ * route is chosen here; the guards above it apply to both.
  */
 const applyToLayer = (
   layer: Layer,
-  time: number,
+  comp: CompItem,
   spec: AnchorPointSpec
-): string | null => {
+): LayerOutcome => {
+  const time = comp.time;
   const mn = layerMatchName(layer);
   const name = describeLayer(layer);
 
   if (mn === MN_LAYER_CAMERA || mn === MN_LAYER_LIGHT) {
-    return "Camera/Light has no bounds " + name;
+    return refuse("Camera/Light has no bounds " + name);
   }
 
   const transform = layer.property(MN_TRANSFORM) as PropertyGroup;
-  if (!transform) return "No transform group " + name;
+  if (!transform) return refuse("No transform group " + name);
 
   const anchorProp = prop(transform, MN_ANCHOR);
   const positionProp = prop(transform, MN_POSITION);
@@ -297,7 +505,7 @@ const applyToLayer = (
   const rotationProp = prop(transform, MN_ROTATE_Z);
 
   if (!anchorProp || !positionProp) {
-    return "No anchor/position properties " + name;
+    return refuse("No anchor/position properties " + name);
   }
 
   // Separated dimensions split position into two scalar properties, so neither
@@ -309,28 +517,40 @@ const applyToLayer = (
     separated = false;
   }
   if (separated) {
-    return "Separated position dimensions: skipped " + name;
+    return refuse("Separated position dimensions: skipped " + name);
   }
 
   // An expression on position would override every keyframe written here, so
   // the tool would report success while changing nothing on screen.
   if (hasExpression(positionProp)) {
-    return "Expression on position: skipped " + name;
-  }
-
-  if (keyCount(positionProp) < 1) {
-    return "Not animated - use Anchor Point instead " + name;
+    return refuse("Expression on position: skipped " + name);
   }
 
   if (isAnimated(anchorProp)) {
-    return "Animated anchor: skipped " + name;
+    return refuse("Animated anchor: skipped " + name);
   }
 
-  // The case this tool cannot do exactly. See the header: a time-varying
-  // correction cannot be baked into a fixed number of keyframes without
-  // drifting between them.
-  if (isAnimated(scaleProp) || isAnimated(rotationProp)) {
-    return "Animated scale/rotation: use a null parent instead " + name;
+  /**
+   * An expression on scale or rotation makes the correction vary across the
+   * whole timeline rather than across a keyframe range, so there is no bounded
+   * span to resample: honouring it would mean rewriting position for the entire
+   * composition, which is far more than the user asked for. Baking the
+   * expression to keyframes first gives the tool the range it needs.
+   */
+  if (hasExpression(scaleProp) || hasExpression(rotationProp)) {
+    return refuse("Expression on scale/rotation: bake it to keyframes " + name);
+  }
+
+  const positionAnimated = keyCount(positionProp) > 0;
+  const transformAnimated =
+    keyCount(scaleProp) > 0 || keyCount(rotationProp) > 0;
+
+  // Nothing moves at all: Anchor Point does this in one write, with no
+  // keyframes involved. Note this is checked against *all three* properties —
+  // a layer with a static position but animated rotation is precisely the case
+  // this tool exists for, and must not be turned away here.
+  if (!positionAnimated && !transformAnimated) {
+    return refuse("Not animated - use Anchor Point instead " + name);
   }
 
   // Cast, not narrow: the typings hang `threeDLayer` off AVLayer, but the
@@ -344,31 +564,73 @@ const applyToLayer = (
       orient !== null &&
       (orient[0] !== 0 || orient[1] !== 0 || orient[2] !== 0);
     if (rx !== 0 || ry !== 0 || oriented) {
-      return "3D rotation not supported yet " + name;
+      return refuse("3D rotation not supported yet " + name);
     }
   }
 
   const probe = probeRect(layer, time);
   const probeSkip = probeRefusal(probe, mn);
-  if (probeSkip !== null) return probeSkip + " " + name;
+  if (probeSkip !== null) return refuse(probeSkip + " " + name);
   const rect = probe.rect as SourceRect;
 
   const anchorVec = vecValue(anchorProp);
-  if (!anchorVec) return "Unreadable transform values: skipped " + name;
+  if (!anchorVec) return refuse("Unreadable transform values: skipped " + name);
 
+  const targetAnchor = anchorForRect(rect, spec);
+  const currentAnchor: Vec2 = [anchorVec[0], anchorVec[1]];
+
+  if (transformAnimated) {
+    return resampleLayer(
+      comp,
+      name,
+      anchorProp,
+      positionProp,
+      scaleProp,
+      rotationProp,
+      anchorVec,
+      currentAnchor,
+      targetAnchor
+    );
+  }
+
+  return shiftLayerKeys(
+    name,
+    anchorProp,
+    positionProp,
+    scaleProp,
+    rotationProp,
+    anchorVec,
+    currentAnchor,
+    targetAnchor
+  );
+};
+
+/**
+ * Exact route — rotation and scale are static, so one constant vector shifts
+ * every existing keyframe. Times, interpolation and eases are all preserved,
+ * because only values are written. Unchanged from the original implementation.
+ */
+const shiftLayerKeys = (
+  name: string,
+  anchorProp: Property,
+  positionProp: Property,
+  scaleProp: Property | null,
+  rotationProp: Property | null,
+  anchorVec: number[],
+  currentAnchor: Vec2,
+  targetAnchor: Vec2
+): LayerOutcome => {
   const scaleVec = vecValue(scaleProp);
   const scale: Vec2 = scaleVec ? [scaleVec[0], scaleVec[1]] : [100, 100];
   const rotation = numValue(rotationProp, 0);
-
-  const target = anchorForRect(rect, spec);
 
   // The bare correction term R * S * (A' - A): passing a zero current position
   // makes `newPosition` the offset itself rather than a compensated position.
   // One implementation of the matrix maths, shared with Anchor Point.
   const offset = computeAnchorMove(
-    [anchorVec[0], anchorVec[1]],
+    currentAnchor,
     [0, 0],
-    target,
+    targetAnchor,
     scale,
     rotation
   ).newPosition;
@@ -376,7 +638,7 @@ const applyToLayer = (
   // Already on the requested point: do not dirty the project rewriting every
   // keyframe with the value it already holds.
   if (isZeroOffset(offset)) {
-    return "Anchor already at this point: skipped " + name;
+    return refuse("Anchor already at this point: skipped " + name);
   }
 
   // Read every keyframe before writing any of them, so the values used are all
@@ -390,7 +652,7 @@ const applyToLayer = (
         value: positionProp.keyValue(i) as unknown as number[],
       });
     } catch (e) {
-      return "Unreadable position keyframes: skipped " + name;
+      return refuse("Unreadable position keyframes: skipped " + name);
     }
   }
 
@@ -399,17 +661,137 @@ const applyToLayer = (
   // Anchor first, then the keyframes. Both happen inside the caller's single
   // undo group, so a failure between them reverts as one step rather than
   // leaving the layer displaced.
-  if (anchorVec.length > 2) {
-    anchorProp.setValue([target[0], target[1], anchorVec[2]]);
-  } else {
-    anchorProp.setValue([target[0], target[1]]);
-  }
+  setAnchorValue(anchorProp, targetAnchor, anchorVec);
 
   for (let i = 0; i < rebaked.length; i++) {
     positionProp.setValueAtTime(rebaked[i].time, rebaked[i].value);
   }
 
-  return null;
+  return { reason: null, resampled: false, drift: 0 };
+};
+
+/** Write the new anchor, preserving a 3-D layer's z component. */
+const setAnchorValue = (
+  anchorProp: Property,
+  targetAnchor: Vec2,
+  anchorVec: number[]
+): void => {
+  if (anchorVec.length > 2) {
+    anchorProp.setValue([targetAnchor[0], targetAnchor[1], anchorVec[2]]);
+  } else {
+    anchorProp.setValue([targetAnchor[0], targetAnchor[1]]);
+  }
+};
+
+/**
+ * Sampled route — rotation or scale is animated, so the correction varies with
+ * time and cannot be a single vector.
+ *
+ * Position is evaluated on the frame grid across the animated range, compensated
+ * in closed form at each sample, and written back as dense linear keyframes.
+ * Every sample is read before anything is written, because the first write to
+ * position would change what the later reads returned.
+ *
+ * THE COST, STATED PLAINLY: this replaces the user's position keyframes with one
+ * per frame. The motion is reproduced, but the original eases are gone — they
+ * are baked into the sampled values instead of surviving as curve handles. That
+ * is the price of keeping the layer pinned while rotation varies, and it is why
+ * the exact route above is still preferred whenever it applies.
+ */
+const resampleLayer = (
+  comp: CompItem,
+  name: string,
+  anchorProp: Property,
+  positionProp: Property,
+  scaleProp: Property | null,
+  rotationProp: Property | null,
+  anchorVec: number[],
+  currentAnchor: Vec2,
+  targetAnchor: Vec2
+): LayerOutcome => {
+  // Nothing to do: the anchor is already there, so the correction is zero at
+  // every time, not just at one. Keeps a second run a genuine no-op.
+  const probeOffset = computeAnchorMove(
+    currentAnchor,
+    [0, 0],
+    targetAnchor,
+    [100, 100],
+    0
+  ).newPosition;
+  if (isZeroOffset(probeOffset)) {
+    return refuse("Anchor already at this point: skipped " + name);
+  }
+
+  // The span over which the transform actually varies. Position's own range is
+  // included so its keyframes are covered too; when position is static the span
+  // comes entirely from scale and rotation, which is the headline case.
+  let range = unionRange(null, keyRange(positionProp));
+  range = unionRange(range, keyRange(scaleProp));
+  range = unionRange(range, keyRange(rotationProp));
+  if (!range) {
+    return refuse("No keyframe range to resample: skipped " + name);
+  }
+
+  const frameDuration = comp.frameDuration;
+  const required = requiredSampleCount(range.t0, range.t1, frameDuration);
+  if (required < 1) {
+    return refuse("Unreadable keyframe range: skipped " + name);
+  }
+  if (required > MAX_RESAMPLE_KEYS) {
+    return refuse(
+      "Animated range too long to resample (" +
+        required +
+        " frames): skipped " +
+        name
+    );
+  }
+
+  const times = buildSampleTimes(range.t0, range.t1, frameDuration);
+  if (times.length < 1) {
+    return refuse("Unreadable keyframe range: skipped " + name);
+  }
+
+  // --- Read phase: nothing below this point may write until it is done. -----
+  const samples: TransformSample[] = [];
+  for (let i = 0; i < times.length; i++) {
+    const s = sampleTransform(positionProp, scaleProp, rotationProp, times[i]);
+    if (!s) return refuse("Unreadable position values: skipped " + name);
+    samples.push(s);
+  }
+
+  // Midpoints, for measuring what the linear reconstruction costs between
+  // frames rather than assuming it is negligible.
+  const midSamples: TransformSample[] = [];
+  for (let i = 0; i < times.length - 1; i++) {
+    const mid = (times[i] + times[i + 1]) / 2;
+    const s = sampleTransform(positionProp, scaleProp, rotationProp, mid);
+    if (s) midSamples.push(s);
+  }
+
+  const values = buildResampledValues(samples, currentAnchor, targetAnchor);
+  const drift = maxLinearDrift(
+    values,
+    midSamples,
+    currentAnchor,
+    targetAnchor
+  );
+
+  // --- Write phase ----------------------------------------------------------
+  setAnchorValue(anchorProp, targetAnchor, anchorVec);
+
+  // Old keyframes go first. Leaving them would mix the user's original eases
+  // between the new dense samples, which is neither the old motion nor the
+  // measured one.
+  clearKeys(positionProp);
+
+  for (let i = 0; i < times.length && i < values.length; i++) {
+    positionProp.setValueAtTime(times[i], values[i]);
+  }
+
+  const dimensions = samples[0].position.length;
+  linearizeKeys(positionProp, dimensions);
+
+  return { reason: null, resampled: true, drift: drift };
 };
 
 /**
@@ -428,22 +810,31 @@ export const repivotAnimated = (pointId: string): RepivotResult => {
   }
 
   let applied = 0;
+  let resampled = 0;
+  let worstDrift = 0;
   const skips = newSkipLog();
 
   app.beginUndoGroup("H-Toolbelt: Re-pivot");
   try {
     const layers = comp.selectedLayers;
     for (let i = 0; i < layers.length; i++) {
-      const reason = applyToLayer(layers[i], comp.time, spec);
-      if (reason === null) {
+      const outcome = applyToLayer(layers[i], comp, spec);
+      if (outcome.reason === null) {
         applied++;
+        if (outcome.resampled) {
+          resampled++;
+          if (outcome.drift > worstDrift) worstDrift = outcome.drift;
+        }
       } else {
-        addSkip(skips, reason);
+        addSkip(skips, outcome.reason);
       }
     }
   } finally {
     app.endUndoGroup();
   }
 
-  return { applied: applied, message: buildMessage(applied, skips) };
+  return {
+    applied: applied,
+    message: buildMessage(applied, resampled, worstDrift, skips),
+  };
 };
