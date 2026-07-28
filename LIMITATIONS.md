@@ -49,13 +49,24 @@ Per-tool usage details are in [docs/](./docs/README.md).
 
 ## Anchor Point
 
+Animated layers are handled, not refused — one grid covers every case. What the
+tool preserves depends on the layer, and it is worth knowing which:
+
+- **A static layer does not move at all.** The compensating position write is
+  exact.
+- **An animated layer keeps its motion path**, not its pixels. The whole position
+  track shifts by one vector, evaluated at the current time, so the path keeps
+  its shape, its keyframe count and its eases, and there is no jump at the frame
+  you are looking at when you click. A layer with animated rotation or scale then
+  **turns about the new anchor**, so other frames render differently — that is
+  what moving a pivot means, and it is the reason you moved it.
+
 Refuses, with a reason naming the layer and its `matchName`:
 
-- **Animated anchor or position** — the compensation is a one-off write, correct
-  only at the current frame.
-- **Animated scale or rotation** — same reason: the correction is computed
-  through the transform matrix at one instant, so the layer would drift on every
-  other frame.
+- **An expression on position** — it would override every write, so the tool
+  would report success while nothing moved on screen.
+- **A keyframed anchor** — the layer-space origin is itself moving, so there is
+  no single anchor to retarget. A different problem, not a missing feature.
 - **Separated position dimensions** — X and Y become distinct properties that a
   combined write cannot reach.
 - **3D layers with X/Y rotation or orientation** — the compensation covers 2-D

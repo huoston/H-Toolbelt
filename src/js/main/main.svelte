@@ -41,7 +41,6 @@
   import ExpressionsPanel from "./tools/ExpressionsPanel.svelte";
   import LoopPanel from "./tools/LoopPanel.svelte";
   import AnchorPanel from "./tools/AnchorPanel.svelte";
-  import RepivotPanel from "./tools/RepivotPanel.svelte";
   import ShapePanel from "./tools/ShapePanel.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
@@ -109,11 +108,6 @@
       <section class="htb-tool">
         <h2 class="htb-tool-name">Anchor Point</h2>
         <AnchorPanel />
-      </section>
-
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Re-pivot</h2>
-        <RepivotPanel />
       </section>
     </div>
 

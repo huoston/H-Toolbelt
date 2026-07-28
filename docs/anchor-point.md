@@ -3,10 +3,22 @@
 ## What it does
 
 Moves a layer's anchor point to one of nine positions on its bounding box —
-corners, edge midpoints, or centre — and compensates `position` so the layer does
-not move on screen. Moving an anchor normally shifts the layer, because
-`position` is measured from the anchor; this tool cancels that shift, including
-at non-100% scale and non-zero rotation, where a naive correction visibly slips.
+corners, edge midpoints, or centre — and compensates `position` so your work is
+preserved. Moving an anchor normally shifts the layer, because `position` is
+measured from the anchor; this tool cancels that shift, including at non-100%
+scale and non-zero rotation, where a naive correction visibly slips.
+
+**One grid handles both static and animated layers.** The tool detects animation
+itself, so you never have to know in advance which case you have:
+
+- **Static layer** — the layer does not move on screen at all.
+- **Animated layer** — the whole position track shifts by one vector, so the
+  **motion path keeps its shape, its keyframe count and its eases**. A layer with
+  animated rotation or scale then pivots around the new point, which is normally
+  the reason you moved the anchor.
+
+This was two separate sections until v0.2.0 (Anchor Point and Re-pivot). They are
+one tool now.
 
 ## How to use
 
@@ -49,9 +61,11 @@ reason: `Skipped 3 layer(s): <reason>`, or
 | `Open a composition first.`                       | No composition is active.                                                                       | Open or select a comp.                                                      |
 | `Select one or more layers first.`                | Nothing is selected.                                                                            | Select at least one layer.                                                  |
 | `Camera/Light has no bounds`                      | Cameras and lights have no source rectangle at all.                                             | Nothing to do — these layers have no bounding box to anchor to.             |
-| `Animated anchor/position: skipped`               | Anchor or position is keyframed or expression-driven.                                           | Remove the keyframes/expression, apply, then re-animate.                    |
-| `Animated scale/rotation: skipped`                | Scale or rotation is keyframed. The compensation is computed for one frame and would drift.     | Same — apply before animating the transform.                                |
+| `Animated anchor: skipped`                        | The anchor itself is keyframed, so there is no single anchor to retarget.                       | Remove the anchor keyframes, apply, then re-animate if you need to.         |
+| `Expression on position: skipped`                 | An expression would override the write, so the tool would report success while nothing moved.   | Disable or bake the expression, apply, then restore it.                     |
+| `Anchor already at this point: skipped`           | Not a failure — the anchor is already there, so there is nothing to change.                      | Nothing.                                                                    |
 | `Separated position dimensions: skipped`          | Position is split into separate X/Y properties, which a combined write cannot reach.            | Re-join dimensions, apply, then separate again if you need to.              |
+| `Unreadable position keyframes: skipped`          | After Effects would not hand over the keyframe values.                                          | Unusual; please open an issue with the `matchName` shown.                   |
 | `3D rotation not supported yet: skipped`          | A 3D layer with X/Y rotation or orientation. The 2-D compensation does not cover it.            | Zero the X/Y rotation, apply, then restore. Z-only rotation works fine.     |
 | `Empty layer (zero-size bounds)`                  | The layer measures zero by zero — an empty shape layer, or text with no glyphs at this frame.   | Add content, then apply.                                                    |
 | `No bounding box available`                       | After Effects returned no usable rectangle for this layer.                                      | Check the layer has visible content at the current time.                    |
@@ -81,6 +95,13 @@ Group mode is reported with the noun "shape group", e.g.
 - **The refusals are deliberate, not missing features.** Each one marks a case
   where the compensation would be wrong rather than merely unsupported. A layer
   that silently ends up in the wrong place is worse than one that says no.
+- **On an animated layer the path is preserved, not the pixels.** The offset is
+  evaluated at the current time, so the layer does not jump at the frame you are
+  looking at — but a layer with animated rotation renders differently on other
+  frames, because it now turns about the new anchor. Preserving the old picture
+  would mean preserving the old pivot, which is the thing you asked to change.
+- **The keyframe count never changes.** The tool shifts values; it does not add,
+  remove or resample keyframes, and it never touches their times.
 - **Parenting needs no special handling.** The compensation keeps the layer's own
   transform output identical for every point in layer space, so whatever the
   parent chain does to that output is unchanged.

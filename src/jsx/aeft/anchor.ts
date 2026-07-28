@@ -30,8 +30,16 @@ import {
   anchorForRect,
   computeAnchorMove,
   findAnchorPoint,
+  isZeroOffset,
+  offsetPositionValue,
+  shiftPositionKeys,
 } from "../../shared/anchor";
-import type { AnchorPointSpec, SourceRect, Vec2 } from "../../shared/anchor";
+import type {
+  AnchorPointSpec,
+  PositionKey,
+  SourceRect,
+  Vec2,
+} from "../../shared/anchor";
 
 export interface AnchorResult {
   applied: number;
@@ -215,19 +223,61 @@ const prop = (group: PropertyGroup, matchName: string): Property | null => {
   }
 };
 
+/** Keyframe count, treating an unreadable count as none. */
+const keyCount = (p: Property | null): number => {
+  if (!p) return 0;
+  try {
+    const n = p.numKeys;
+    return typeof n === "number" && isFinite(n) ? n : 0;
+  } catch (e) {
+    return 0;
+  }
+};
+
+/**
+ * An active expression overrides anything written, so the tool would report
+ * success while nothing moved. Expressions are the Expression Effects tool's
+ * territory; here they mean "refuse".
+ */
+const hasExpression = (p: Property | null): boolean => {
+  if (!p) return false;
+  try {
+    return p.expressionEnabled === true;
+  } catch (e) {
+    // Property does not expose expressions.
+    return false;
+  }
+};
+
 /** A property is unsafe to rewrite if it is keyframed or expression-driven. */
 const isAnimated = (p: Property | null): boolean => {
-  if (!p) return false;
-  if (p.numKeys > 0) return true;
-  // An active expression would override anything we write, so the compensation
-  // would silently not happen. Expressions are the Expression Effects tool's
-  // territory; here they mean "refuse".
+  return keyCount(p) > 0 || hasExpression(p);
+};
+
+/** Vector value at a given time, post-expression. Null when unreadable. */
+const vecAtTime = (p: Property | null, t: number): number[] | null => {
+  if (!p) return null;
   try {
-    if (p.expressionEnabled) return true;
+    const v = p.valueAtTime(t, false) as unknown as number[];
+    return v instanceof Array ? v : null;
   } catch (e) {
-    // Property does not expose expressions; not animated by that route.
+    return null;
   }
-  return false;
+};
+
+/** Numeric value at a given time, post-expression. */
+const numAtTime = (
+  p: Property | null,
+  t: number,
+  fallback: number
+): number => {
+  if (!p) return fallback;
+  try {
+    const v = p.valueAtTime(t, false) as unknown as number;
+    return typeof v === "number" && isFinite(v) ? v : fallback;
+  } catch (e) {
+    return fallback;
+  }
 };
 
 /** Numeric value of a property, defaulting when unreadable. */
@@ -371,15 +421,17 @@ const applyToLayer = (
     return "No anchor/position properties " + name;
   }
 
-  if (isAnimated(anchorProp) || isAnimated(positionProp)) {
-    return "Animated anchor/position: skipped " + name;
+  // A keyframed anchor is a different problem entirely: the layer-space origin
+  // itself is moving, so there is no single `A` to retarget.
+  if (isAnimated(anchorProp)) {
+    return "Animated anchor: skipped " + name;
   }
 
-  // A one-off position write cannot compensate a transform that changes over
-  // time: the offset we compute is only correct at the current frame, so the
-  // layer would drift on every other frame.
-  if (isAnimated(scaleProp) || isAnimated(rotationProp)) {
-    return "Animated scale/rotation: skipped " + name;
+  // Keyframes on position are fine — they get shifted below. An *expression* is
+  // not: it would override every write, so the tool would report success while
+  // nothing moved on screen.
+  if (hasExpression(positionProp)) {
+    return "Expression on position: skipped " + name;
   }
 
   // Separated X/Y position are distinct 1-D properties; setValue on the
@@ -413,28 +465,75 @@ const applyToLayer = (
   const rect = probe.rect as SourceRect;
 
   const anchorVec = vecValue(anchorProp);
-  const positionVec = vecValue(positionProp);
-  if (!anchorVec || !positionVec) {
+  if (!anchorVec) {
     return "Unreadable transform values: skipped " + name;
   }
 
-  const scaleVec = vecValue(scaleProp);
-  const scale: Vec2 = scaleVec
-    ? [scaleVec[0], scaleVec[1]]
-    : [100, 100];
-  const rotation = numValue(rotationProp, 0);
+  // Read the transform at the current time explicitly rather than via `.value`:
+  // the two agree today, but naming the time is what makes "no jump at the frame
+  // the user is looking at" a property of the code rather than a coincidence.
+  // Post-expression, so an expression-driven rotation is honoured as rendered.
+  const scaleVec = vecAtTime(scaleProp, time);
+  const scale: Vec2 = scaleVec ? [scaleVec[0], scaleVec[1]] : [100, 100];
+  const rotation = numAtTime(rotationProp, time, 0);
 
   const target = anchorForRect(rect, spec);
-  const move = computeAnchorMove(
+
+  // The bare correction term R * S * (A' - A): passing a zero current position
+  // makes `newPosition` the offset itself rather than a compensated position.
+  const offset = computeAnchorMove(
     [anchorVec[0], anchorVec[1]],
-    [positionVec[0], positionVec[1]],
+    [0, 0],
     target,
     scale,
     rotation
-  );
+  ).newPosition;
 
-  setVec(anchorProp, move.newAnchor, anchorVec);
-  setVec(positionProp, move.newPosition, positionVec);
+  // Already on the requested point: do not dirty the project rewriting values
+  // with what they already hold.
+  if (isZeroOffset(offset)) {
+    return "Anchor already at this point: skipped " + name;
+  }
+
+  // Read everything before writing anything: the first write to position would
+  // change what any later read returned.
+  const total = keyCount(positionProp);
+  const keys: PositionKey[] = [];
+  let staticValue: number[] | null = null;
+
+  if (total > 0) {
+    for (let i = 1; i <= total; i++) {
+      try {
+        keys.push({
+          time: positionProp.keyTime(i),
+          value: positionProp.keyValue(i) as unknown as number[],
+        });
+      } catch (e) {
+        return "Unreadable position keyframes: skipped " + name;
+      }
+    }
+  } else {
+    staticValue = vecAtTime(positionProp, time);
+    if (!staticValue) {
+      return "Unreadable transform values: skipped " + name;
+    }
+  }
+
+  const shifted = shiftPositionKeys(keys, offset);
+
+  // Anchor first, then position. Both are inside the caller's single undo group,
+  // so a failure between them reverts as one step rather than leaving the layer
+  // displaced.
+  setVec(anchorProp, [target[0], target[1]], anchorVec);
+
+  if (staticValue) {
+    positionProp.setValue(offsetPositionValue(staticValue, offset));
+  } else {
+    for (let i = 0; i < shifted.length; i++) {
+      positionProp.setValueAtTime(shifted[i].time, shifted[i].value);
+    }
+  }
+
   return null;
 };
 

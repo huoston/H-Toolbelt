@@ -3,10 +3,20 @@
 
   A 3x3 grid of the nine canonical bounding-box anchor points. Clicking one
   applies immediately via a typed evalTS call to the host, which moves the anchor
-  and compensates `position` through the transform matrix so nothing shifts on
-  screen. The host refuses (rather than guesses) on animated transforms, 3D
-  rotation and separated position dimensions; those refusals surface verbatim in
-  the feedback line.
+  and compensates `position` through the transform matrix.
+
+  One grid handles every layer. The host detects animation itself and branches
+  internally: a static layer gets a single compensating position write and does
+  not move on screen; an animated one has its whole position track shifted by the
+  same vector, so the motion path keeps its shape and its eases while rotation
+  and scale start pivoting around the new point. This used to be two sections —
+  Anchor Point and Re-pivot — which forced the user to know in advance whether
+  their layer was animated in order to pick the right grid. That is the tool's
+  job, not theirs.
+
+  The host still refuses what it cannot express: an expression on position, a
+  keyframed anchor, separated position dimensions, rotated 3D layers, and layers
+  with no usable bounds. Those refusals surface verbatim in the feedback line.
 
   Author: Dr. Huoston Rodrigues
   Website: https://huoston.art/
@@ -44,6 +54,10 @@
 </script>
 
 <div class="htb-anchor">
+  <p class="htb-anchor-hint">
+    Move the layer anchor. Animated layers keep their motion path automatically.
+  </p>
+
   <div class="htb-anchor-grid">
     {#each ANCHOR_POINTS as point (point.id)}
       <button
@@ -70,6 +84,14 @@
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
+  }
+
+  .htb-anchor-hint {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--htb-text-muted, #9a9a9a);
+    opacity: 0.85;
   }
 
   .htb-anchor-grid {

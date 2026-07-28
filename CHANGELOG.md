@@ -115,10 +115,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Re-pivot now preserves the motion path: it shifts position keyframes by a
-  constant offset (evaluated at the current time) and moves the anchor, so eases
-  and path shape are kept and rotation/scale re-pivot around the new point.
-  Removed per-frame resampling.
+- Merged Anchor Point and Re-pivot into a single Anchor Point tool that
+  auto-detects animation: static layers get exact compensation, animated layers
+  keep their motion path. Removed the separate Re-pivot section.
+
+  Two grids asked the user to know, before clicking, whether their layer was
+  animated — and to pick the right tool on that basis. That is the tool's job.
+  There is now one 3×3 grid in the Transform tab; the host branches internally on
+  whether position carries keyframes, which is invisible from the panel.
+
+  The merge is a consolidation, not a rewrite: the Re-pivot formula **subsumes**
+  the old Anchor Point one. Both reduce to `position + R·S·(A' − A)`, the first
+  by adding a separately-computed offset and the second by folding it into one
+  call. A test suite pins that identity across six transform configurations and
+  was the precondition for deleting the old code path — if it ever fails, the
+  merge was not the no-op it claims to be.
+
+  Exactly one behaviour changed: **animated scale, rotation and position are now
+  handled rather than refused.** The tool does more and refuses less. Everything
+  else is preserved, including shape-group mode, which lives only in this module
+  and would have been lost by deleting it in the other direction.
+
+  `src/jsx/aeft/repivot.ts`, `src/shared/repivot.ts` and `RepivotPanel.svelte` are
+  gone; their logic and their tests now live in the anchor module and its suite.
+
+- Re-pivot preserved the motion path rather than the pixels: it shifted position
+  keyframes by a constant offset (evaluated at the current time) and moved the
+  anchor, so eases and path shape were kept and rotation/scale re-pivoted around
+  the new point. Removed per-frame resampling. *(Superseded by the merge above;
+  this is the behaviour the unified Anchor Point inherited.)*
 
   The previous implementation optimised for the wrong invariant. It preserved
   the rendered *pixels* at every frame, which for a layer with animated rotation

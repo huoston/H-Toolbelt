@@ -16,7 +16,7 @@ The panel is organised into tabs, so this document is too.
 | Tab             | Shipped                                 | Next up                          |
 | --------------- | --------------------------------------- | -------------------------------- |
 | **Motion**      | Easings, Sequencing, Expression Effects | Loop Creator, then Timing suite  |
-| **Transform**   | Anchor Point, Re-pivot *(built)*        | —                                |
+| **Transform**   | Anchor Point                            | —                                |
 | **Shapes**      | Shape Layer Magic v1 *(built)*          | —                                |
 | **Compositing** | — *(tab not shown until its first tool)*| Grounding, Atmosphere, Depth     |
 
@@ -63,20 +63,19 @@ The panel is organised into tabs, so this document is too.
   compensated through the transform matrix, so nothing moves on screen at any
   scale or rotation.
 
-### Built — lands in v0.2.0
+### Changed — lands in v0.2.0
 
-- **Re-pivot** — moves the anchor of a layer whose **position is animated**,
-  re-baking every position keyframe so the animation stays visually identical.
-  The case Smart Anchor Point refuses, answered by a separate tool rather than by
-  loosening the safe one.
+- **Anchor Point now handles animated layers**, in the same grid. It detects
+  animation itself and branches internally, so the user never has to know in
+  advance which case they have. A static layer does not move at all; an animated
+  one has its whole position track shifted by one vector, evaluated at the
+  current time, so the **motion path keeps its shape, its keyframe count and its
+  eases** and a rotating layer starts turning about the new anchor — which is the
+  point of moving a pivot.
 
-  **Preserves the motion path, not the pixels.** The whole position track is
-  shifted by one vector, evaluated at the current time, so the path keeps its
-  shape and its eases, the keyframe count does not change, and a rotating layer
-  starts turning about the new anchor — which is the point of moving a pivot.
-
-  No null parenting and no resampling: the anchor of the layer itself moves.
-  Still refused: an expression on position, an animated anchor, separated
+  This absorbed the separate Re-pivot tool, which briefly existed as its own
+  section. No null parenting and no resampling: the anchor of the layer itself
+  moves. Still refused: an expression on position, a keyframed anchor, separated
   position dimensions, and rotated 3D.
 
 ---

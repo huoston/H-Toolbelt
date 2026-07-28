@@ -141,3 +141,119 @@ export function computeAnchorMove(
     newPosition: [currentPosition[0] + rotatedX, currentPosition[1] + rotatedY],
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Animated layers: shifting the whole position track                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A layer whose position is animated has no single position to compensate —
+ * every keyframe holds one. The rest of this module shifts the whole track.
+ *
+ * The offset is the same `R * S * (A' - A)` term as above, obtained by calling
+ * `computeAnchorMove` with a zero current position so its `newPosition` is the
+ * bare correction. The host evaluates it once, at the composition's current
+ * time, and adds it to every keyframe. That single choice is the design:
+ *
+ *   - **Kept: the motion path.** One vector added to every keyframe moves the
+ *     track rigidly, so distances and directions between keyframes are
+ *     unchanged — a straight path stays straight — and times, interpolation and
+ *     eases survive because only values are written.
+ *   - **Kept: the current frame.** The offset is exact at `t_now`, so the layer
+ *     does not jump at the frame the user is looking at when they click.
+ *   - **Given up: the pixels elsewhere.** A layer with animated rotation now
+ *     turns about the new anchor, so other frames render differently. That is
+ *     what moving a pivot *means*.
+ *
+ * On a fully static layer this reduces to exactly the single-write compensation
+ * above — `position + R * S * (A' - A)` either way — which is what lets one code
+ * path serve both cases. `anchor.test.ts` pins that identity.
+ *
+ * An earlier version chased the pixels instead, resampling position onto the
+ * frame grid so every rendered frame matched. It worked, and it was wrong:
+ * preserving the picture of a rotating layer forces its position track into an
+ * arc needing one keyframe per frame, destroying the path and the eases to
+ * preserve an image the user had just asked to change.
+ */
+
+/** One position keyframe, as read from and written back to After Effects. */
+export interface PositionKey {
+  /** Composition time, in seconds. Never modified by these functions. */
+  time: number;
+  /** The position value: 2 components for a 2-D layer, 3 for a 3-D one. */
+  value: number[];
+}
+
+/** Below this, an offset is not worth writing keyframes for. */
+export const OFFSET_EPSILON = 1e-9;
+
+/**
+ * Add a 2-D offset to a position value of any dimensionality.
+ *
+ * Only x and y move. A 3-D layer's z is carried through untouched, because the
+ * anchor is retargeted within the 2-D bounding box that `sourceRectAtTime`
+ * reports — there is no z component to the move, and inventing one would push
+ * the layer through its own depth.
+ */
+export const offsetPositionValue = (
+  value: number[],
+  offset: Vec2
+): number[] => {
+  if (!value || !(value instanceof Array)) return [];
+
+  const out: number[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const component = value[i];
+    if (i === 0) {
+      out.push(component + offset[0]);
+    } else if (i === 1) {
+      out.push(component + offset[1]);
+    } else {
+      out.push(component);
+    }
+  }
+  return out;
+};
+
+/**
+ * Apply the offset to every keyframe, preserving times and count.
+ *
+ * Returns a new list rather than mutating: the host reads every keyframe before
+ * writing any of them, so the original values must survive the whole pass.
+ */
+export const shiftPositionKeys = (
+  keys: PositionKey[],
+  offset: Vec2
+): PositionKey[] => {
+  const out: PositionKey[] = [];
+  if (!keys) return out;
+
+  for (let i = 0; i < keys.length; i++) {
+    out.push({
+      time: keys[i].time,
+      value: offsetPositionValue(keys[i].value, offset),
+    });
+  }
+  return out;
+};
+
+/**
+ * Is this offset small enough that applying it would be a no-op?
+ *
+ * Used to make a second run a genuine no-op: once the anchor sits on the
+ * requested point the correction is zero, so re-running the tool with the same
+ * target must not rewrite every keyframe with an identical value and dirty the
+ * project for nothing.
+ */
+export const isZeroOffset = (offset: Vec2, eps?: number): boolean => {
+  const limit =
+    typeof eps === "number" && isFinite(eps) && eps >= 0 ? eps : OFFSET_EPSILON;
+  if (!offset) return true;
+
+  const x = offset[0];
+  const y = offset[1];
+  if (typeof x !== "number" || typeof y !== "number") return true;
+  if (!isFinite(x) || !isFinite(y)) return true;
+
+  return Math.abs(x) <= limit && Math.abs(y) <= limit;
+};
