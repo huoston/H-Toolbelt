@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Loop Creator (Motion tab): cycle/ping-pong/offset/continue loop expressions
+  with direction and keyframe count; reuses expression Clear. The lowest-risk
+  tool of the new batch — it mirrors Expression Effects exactly (pure tested
+  generator, ES3 text, host guards, one undo group per run), and `loopOut` /
+  `loopIn` calls are inherently ES3, so the syntax constraint costs nothing.
+
+  `continue` never receives the keyframe-count argument. The other three modes
+  replay a *segment* of the animation, so a count means something to them;
+  `continue` extrapolates from the velocity at the last keyframe and has no
+  segment to count. After Effects ignores a second argument there rather than
+  erroring, which is precisely why it must not be emitted — `loopOut("continue",
+  2)` would sit in the user's expression field looking like a setting that does
+  something. The panel disables the field for the same reason.
+
+  The count is clamped to 1000 rather than passed through: JavaScript switches to
+  exponent notation at 1e21, and a stray `loopOut("cycle", 1e+21)` reads as a
+  typo in the expression field the user is about to inspect. Same reasoning as
+  `formatNumber` in `shared/expressions`. A unit test caught this.
+
+  The guards match the existing expression tool: never overwrite an existing
+  expression, refuse properties that reject expressions or whose value type the
+  loop does not cover, and require 2+ keyframes — a loop replays the span between
+  keyframes, so with one keyframe `loopOut` returns a constant and the property
+  would look untouched while carrying an expression. Clear calls the existing
+  `clearExpressions` host function; removing an expression does not depend on
+  which tool wrote it, so `expressions.ts` is untouched on both sides.
+
 - Shape Layer Magic (v1): remove empty groups, remove artboard rectangle, and a
   Clean all that runs both under one undo group. Cleanup for what an Illustrator
   or SVG import leaves in a shape layer. Both operations are pure deletion, so

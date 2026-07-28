@@ -39,6 +39,7 @@
   import EasingsPanel from "./tools/EasingsPanel.svelte";
   import SequencePanel from "./tools/SequencePanel.svelte";
   import ExpressionsPanel from "./tools/ExpressionsPanel.svelte";
+  import LoopPanel from "./tools/LoopPanel.svelte";
   import AnchorPanel from "./tools/AnchorPanel.svelte";
   import ShapePanel from "./tools/ShapePanel.svelte";
   import { initAeTheme } from "./theme";
@@ -88,6 +89,11 @@
       <section class="htb-tool">
         <h2 class="htb-tool-name">Expressions</h2>
         <ExpressionsPanel />
+      </section>
+
+      <section class="htb-tool">
+        <h2 class="htb-tool-name">Loops</h2>
+        <LoopPanel />
       </section>
     </div>
 

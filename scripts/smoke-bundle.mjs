@@ -46,9 +46,15 @@ const ASSETS_DIR = join("dist", "cep", "assets");
 // host (src/jsx) is a separate target and is deliberately out of scope.
 const UI_SRC_DIRS = [join("src", "js", "main")];
 
-// Runtime values that reach the bundle only through the shared easing module.
-// Any one missing means the symbol carrying it was elided.
+// Runtime values that reach the bundle only through a shared module. Any one
+// missing means the symbol carrying it was elided.
+//
+// These complement the imported-symbol scan below rather than duplicating it:
+// that scan proves a binding named LOOP_TYPES exists, while these prove the
+// array still has its contents. P02a was a values-vanished bug, not a
+// names-vanished one.
 const REQUIRED_TOKENS = [
+  // shared/easing — EASING_PRESETS
   '"Easy Ease"',
   '"Ease Out"',
   '"Ease In"',
@@ -56,6 +62,11 @@ const REQUIRED_TOKENS = [
   '"Ease Out Strong"',
   '"Ease In-Out Strong"',
   "0.333",
+  // shared/loop — LOOP_TYPES / LOOP_DIRECTIONS ids, which are also the strings
+  // baked into the generated expression text.
+  '"pingpong"',
+  '"continue"',
+  '"Ping-Pong"',
 ];
 
 const fail = (msg) => {
