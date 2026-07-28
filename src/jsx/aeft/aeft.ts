@@ -20,6 +20,8 @@ import { sequenceLayers } from "./sequence";
 export { sequenceLayers };
 import { applyExpression, clearExpressions } from "./expressions";
 export { applyExpression, clearExpressions };
+import { cleanAll, removeArtboardRect, removeEmptyGroups } from "./shape";
+export { cleanAll, removeArtboardRect, removeEmptyGroups };
 
 export const helloWorld = () => {
   alert("Hello from After Effects!");

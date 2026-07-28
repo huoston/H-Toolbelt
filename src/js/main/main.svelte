@@ -30,6 +30,7 @@
   import AnchorGrid from "./AnchorGrid.svelte";
   import SequencePanel from "./SequencePanel.svelte";
   import ExpressionsPanel from "./ExpressionsPanel.svelte";
+  import ShapePanel from "./ShapePanel.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
@@ -149,6 +150,11 @@
     <section class="htb-tool htb-col htb-col-wide">
       <h2 class="htb-tool-name">Expressions</h2>
       <ExpressionsPanel />
+    </section>
+
+    <section class="htb-tool htb-col htb-col-wide">
+      <h2 class="htb-tool-name">Shape Layer</h2>
+      <ShapePanel />
     </section>
   </div>
 </main>

@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Shape Layer Magic (v1): remove empty groups, remove artboard rectangle, and a
+  Clean all that runs both under one undo group. Cleanup for what an Illustrator
+  or SVG import leaves in a shape layer. Both operations are pure deletion, so
+  anything surviving a run is untouched rather than recreated, and both are
+  idempotent. A group counts as empty only when its contents are exclusively
+  other empty groups — defined by exclusion rather than by listing drawable match
+  names, because such a list has to stay exhaustive forever or it starts deleting
+  artwork the day Adobe adds an operator to it. The artboard match is deliberately
+  narrow: a top-level group with an identity transform, exactly one drawable item
+  which is a rectangle sized to the comp frame at position `[0,0]` within 1 px,
+  no keyframes or expression on either, and nothing else but paint. The identity
+  requirement is load-bearing rather than decorative — a 960x540 rectangle inside
+  a group scaled 200% does cover a 1920x1080 comp, and a comp-sized rectangle in a
+  group scaled 50% does not. Each operation collects its targets across the whole
+  tree before deleting any of them, so no traversal reads a group whose siblings
+  were renumbered underneath it. The predicates (`isIdentityTransform`,
+  `isArtboardRect`) live in the pure, unit-tested `shared/shape` module.
+
+  **Flatten is deliberately absent, on API grounds.** Collapsing
+  identity-transform wrapper groups needs a shape group moved to a new parent, and
+  ExtendScript has no such call: `parentProperty` is read-only, `moveTo` reorders
+  within the existing parent, and `duplicate` copies in place. Rebuilding the
+  contents instead cannot be faithful — gradient ramp data is neither readable nor
+  writable from ExtendScript, so every gradient would return as a default, and
+  keyframes and expressions on each descendant would each need their own
+  reconstruction. Independently of the API, the premise is unsound: a group is a
+  scope, not merely a transform, so hoisting the children of an identity-transform
+  group into a parent holding other paths merges the scopes its fills and its
+  Trim/Merge/Offset/Repeater operators rely on, changing the layer's appearance.
+  The panel ships no Flatten button and says why in the section itself.
+
 - Documentation: per-tool usage docs, known limitations, roadmap, issue
   templates. `docs/` carries one page per tool — steps, options with their actual
   defaults, and a table of every refusal message with its cause and remedy, taken

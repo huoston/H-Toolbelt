@@ -25,14 +25,18 @@ See the [changelog](./CHANGELOG.md) for detail.
 
 ## Next — v0.2.0
 
-- **Shape Layer Magic.** Cleanup and merge for imported shape layers: flattening
-  redundant group nesting, merging layers, and stripping the artboard rectangles
-  Illustrator imports bring along.
+- **Shape Layer Magic (v1) — built, unreleased.** Cleanup for imported shape
+  layers: removing groups that cannot draw, and stripping the comp-sized artboard
+  rectangle Illustrator brings along. Both operations are pure deletion.
 
-  Rescoped from the original idea. The tool was first conceived as an SVG
-  importer, but After Effects 2026 imports SVG as native shape layers on its own.
-  What it produces still needs tidying, so the useful work moved downstream of
-  the import rather than replacing it.
+  Rescoped twice. It was first conceived as an SVG importer, but After Effects
+  2026 imports SVG as native shape layers on its own, so the useful work moved
+  downstream of the import. It was then cut back further: **flattening
+  identity-transform wrapper groups and merging layers are not in v1**, because
+  ExtendScript exposes no call that moves a shape group to a new parent, and
+  rebuilding the contents instead cannot carry gradients, keyframes or
+  expressions across. Details in
+  [docs/shape-layer-magic.md](./docs/shape-layer-magic.md).
 
 - **Calibrated bounce/elastic presets** — Soft / Medium / Hard, so the effects
   are usable without understanding what amplitude, frequency and decay do.
@@ -41,10 +45,15 @@ See the [changelog](./CHANGELOG.md) for detail.
 
 Not commitments. Roughly in order of how likely they are to happen.
 
-- **Per-property refusal messages for Easings.** The other three tools name what
-  they skipped and why; Easings skips silently. Closing that gap is the most
-  obvious inconsistency in the panel today. See
+- **Per-property refusal messages for Easings.** The other tools name what they
+  skipped and why; Easings skips silently. Closing that gap is the most obvious
+  inconsistency in the panel today. See
   [LIMITATIONS](./LIMITATIONS.md#easings).
+- **Shape flatten and layer merge, done properly.** Both need transforms rebaked
+  into path data rather than groups collapsed, since a group scopes its fills and
+  its Trim/Merge/Offset/Repeater operators — an identity transform does not make
+  it a no-op. That is a real piece of geometry work, not a follow-up patch, which
+  is why it sits here and not under *Next*.
 - **Usage GIFs in the README.** A motion-design tool that shows no motion is a
   poor advertisement for itself.
 - **Producer signing certificate.** The `.zxp` is self-signed today, so

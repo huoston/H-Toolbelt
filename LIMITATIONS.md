@@ -118,6 +118,38 @@ Behaviour worth knowing:
   ExtendScript expression engines. That constrains the text to older syntax, but
   costs nothing in behaviour.
 
+## Shape Layer Magic
+
+The v1 tool is **cleanup only** — it deletes, and never restructures. Full detail
+in [docs/shape-layer-magic.md](./docs/shape-layer-magic.md).
+
+- **No flatten, and it is not a scheduling gap.** Collapsing identity-transform
+  wrapper groups is impossible to do safely from ExtendScript: `parentProperty` is
+  read-only and no API call moves a property group to a new parent, so flattening
+  would mean rebuilding the contents — which cannot carry gradient ramps (not
+  readable or writable from ExtendScript), keyframes or expressions across.
+  Separately, an identity transform does not make a group a no-op: a group scopes
+  its fills and its Trim/Merge/Offset/Repeater operators, so hoisting its children
+  into a parent that holds other paths changes what those operators affect. The
+  appearance would change, which the tool must never do.
+- **No merging of several shape layers into one.** Needs the same rebaking, plus
+  transform reconciliation between layers.
+- **The artboard match is deliberately narrow.** A top-level group qualifies only
+  with an identity transform, exactly one drawable item which is a rectangle,
+  Size matching the comp frame and Position `[0,0]` within 1 px, no keyframes or
+  expression on either, and nothing else but fills and strokes. No match means
+  nothing is removed — a cleanup tool that guesses is worse than one that misses.
+- **Only top-level groups are examined for the artboard.** Illustrator puts the
+  backdrop at the root; a comp-sized rectangle nested deeper is more likely to be
+  deliberate artwork. A bare rectangle not wrapped in a group is also skipped,
+  since only the group carries the transform that makes the size test meaningful.
+- **Empty is defined by exclusion.** A group counts as empty only when its
+  contents are exclusively other empty groups. Anything else — path, paint,
+  operator, or a match name this build does not recognise — makes it non-empty.
+  That errs towards leaving debris behind rather than deleting artwork.
+- **A group After Effects refuses to delete is left in place** and not counted, so
+  the number reported is what happened rather than what was attempted.
+
 ## Reporting something not listed here
 
 If a tool refuses in a way you believe is wrong, please

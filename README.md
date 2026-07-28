@@ -9,26 +9,29 @@ several everyday automation tools behind one dockable interface.
 
 ## Tools
 
-Four tools ship in **v0.1.0**:
+| Tool                    | What it does                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Easings**             | Apply cubic-bezier keyframe easing from presets or a draggable curve editor.                          |
+| **Anchor Point**        | Move a layer's anchor to any of nine bounding-box points, compensating `position` so nothing shifts.   |
+| **Sequencing**          | Stagger selected layers in time by a frame offset, ordered by timeline, in-point, or a seeded shuffle. |
+| **Expression Effects**  | One-click bounce and elastic expressions on the selected properties, plus Clear.                       |
+| **Shape Layer Magic**   | Clean up AI/SVG imports: remove empty groups and the leftover artboard rectangle. *Cleanup only — see below.* |
 
-| Tool                   | What it does                                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Easings**            | Apply cubic-bezier keyframe easing from presets or a draggable curve editor.                          |
-| **Anchor Point**       | Move a layer's anchor to any of nine bounding-box points, compensating `position` so nothing shifts.   |
-| **Sequencing**         | Stagger selected layers in time by a frame offset, ordered by timeline, in-point, or a seeded shuffle. |
-| **Expression Effects** | One-click bounce and elastic expressions on the selected properties, plus Clear.                       |
+The first four shipped in **v0.1.0**. Shape Layer Magic is new and unreleased.
 
-Planned for a later release:
-
-| Tool                  | What it will do                                                                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Shape Layer Magic** | Clean up and merge imported shape layers — After Effects 2026 imports SVG natively, and what it produces usually needs flattening, regrouping and tidying. |
+> **Shape Layer Magic is v1 and deletes only.** It removes empty groups and the
+> comp-sized artboard rectangle. It does **not** flatten wrapper groups or merge
+> layers: After Effects' scripting API has no call that moves a shape group to a
+> new parent, and rebuilding the contents instead would lose gradients, keyframes
+> and expressions. The full reasoning is in
+> [docs/shape-layer-magic.md](./docs/shape-layer-magic.md).
 
 ## Documentation
 
 | Page                                              | What it covers                                                                     |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [Usage guides](./docs/README.md)                  | One page per tool: steps, options with their real defaults, and every refusal message. |
+| [Shape Layer Magic](./docs/shape-layer-magic.md)  | What the v1 cleanup does, what it deliberately leaves alone, and why.               |
 | [Known limitations](./LIMITATIONS.md)             | What the tools deliberately will not do, and why.                                   |
 | [Roadmap](./ROADMAP.md)                           | What is committed for the next release, and what is only being considered.          |
 | [Changelog](./CHANGELOG.md)                       | What changed in each version.                                                       |
@@ -48,6 +51,9 @@ Planned for a later release:
   their layer and nothing is trimmed.
 - **Expression text is ES3,** so it runs under both of After Effects' expression
   engines, including Legacy ExtendScript.
+- **Shape Layer Magic only deletes,** never rebuilds, so anything that survives a
+  cleanup is untouched rather than recreated. Its artboard match is narrow on
+  purpose: no match means nothing is removed. Running it twice is safe.
 
 ## Compatibility
 
