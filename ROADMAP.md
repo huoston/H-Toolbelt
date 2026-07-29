@@ -16,7 +16,7 @@ The panel is organised into tabs, so this document is too.
 | Tab             | Shipped                                 | Next up                          |
 | --------------- | --------------------------------------- | -------------------------------- |
 | **Motion**      | Easings, Sequencing, Expression Effects | Loop Creator, then Timing suite  |
-| **Transform**   | Anchor Point                            | —                                |
+| **Transform**   | Anchor Point, Align *(built)*           | Align: 3-D, parent, key layer    |
 | **Shapes**      | Shape Layer Magic v1 *(built)*          | —                                |
 | **Compositing** | — *(tab not shown until its first tool)*| Grounding, Atmosphere, Depth     |
 
@@ -77,6 +77,31 @@ The panel is organised into tabs, so this document is too.
   section. No null parenting and no resampling: the anchor of the layer itself
   moves. Still refused: an expression on position, a keyframed anchor, separated
   position dimensions, and rotated 3D.
+
+### Built — lands in v0.2.0
+
+- **Align & Distribute** — six alignments against the comp frame or the
+  selection's own bounds, plus horizontal and vertical distribution. Unlike After
+  Effects' own Align, it measures the layer's bounding box **in composition
+  space**, so a rotated or scaled layer aligns by what is on screen rather than
+  by its untransformed rectangle. Animated layers keep their motion path, exactly
+  as Anchor Point does.
+
+### Planned — Align v2
+
+Deliberately out of v1, in rough order of usefulness:
+
+- **3-D layers and alignment in Z.** The geometry already works on 3-component
+  points so depth is an added axis rather than a rewrite, but a 3-D layer's
+  screen box depends on the active camera — a different computation, not a flag.
+  3-D layers are refused by name today rather than silently mishandled.
+- **Align via Parent.** A parented layer's `position` is in its parent's space,
+  so a comp-space delta would misplace it; these are refused for now. Handling
+  them means transforming the delta back through the parent chain.
+- **Align to a key layer** — one selected layer as the target, instead of the
+  comp or the whole selection.
+- **Distribute by edge spacing** — equal gaps between boxes rather than equal
+  spacing between centres, which is what you want for layers of differing size.
 
 ---
 

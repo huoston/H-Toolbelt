@@ -22,6 +22,8 @@ import { applyExpression, clearExpressions } from "./expressions";
 export { applyExpression, clearExpressions };
 import { cleanAll, removeArtboardRect, removeEmptyGroups } from "./shape";
 export { cleanAll, removeArtboardRect, removeEmptyGroups };
+import { alignLayers, distributeLayers } from "./align";
+export { alignLayers, distributeLayers };
 import { applyLoop } from "./loop";
 export { applyLoop };
 

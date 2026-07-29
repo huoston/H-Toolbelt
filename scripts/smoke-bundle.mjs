@@ -67,6 +67,10 @@ const REQUIRED_TOKENS = [
   '"pingpong"',
   '"continue"',
   '"Ping-Pong"',
+  // shared/align — ALIGN_MODES / ALIGN_TARGETS ids sent to the host.
+  '"hcenter"',
+  '"vcenter"',
+  '"selection"',
 ];
 
 const fail = (msg) => {

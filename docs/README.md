@@ -8,6 +8,7 @@ safely, and the message tells you why.
 | ---------------------------------------- | ------------------------------------------------------------------------- |
 | [Easings](./easings.md)                   | Cubic-bezier keyframe easing from presets or the draggable curve editor.  |
 | [Anchor Point](./anchor-point.md)         | Moving a layer's anchor without the layer moving on screen.               |
+| [Align & Distribute](./align.md)          | Aligning and spacing layers by their on-screen bounding box.              |
 | [Sequencing](./sequencing.md)             | Staggering selected layers in time.                                       |
 | [Expression Effects](./expressions.md)    | One-click bounce and elastic expressions, and clearing expressions.       |
 | [Shape Layer Magic](./shape-layer-magic.md) | Cleaning up empty groups and artboard rectangles left by AI/SVG imports. |

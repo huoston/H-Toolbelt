@@ -41,6 +41,7 @@
   import ExpressionsPanel from "./tools/ExpressionsPanel.svelte";
   import LoopPanel from "./tools/LoopPanel.svelte";
   import AnchorPanel from "./tools/AnchorPanel.svelte";
+  import AlignPanel from "./tools/AlignPanel.svelte";
   import ShapePanel from "./tools/ShapePanel.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
@@ -108,6 +109,11 @@
       <section class="htb-tool">
         <h2 class="htb-tool-name">Anchor Point</h2>
         <AnchorPanel />
+      </section>
+
+      <section class="htb-tool">
+        <h2 class="htb-tool-name">Align</h2>
+        <AlignPanel />
       </section>
     </div>
 

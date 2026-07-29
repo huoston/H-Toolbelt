@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Align & Distribute (Transform tab): 6 aligns (comp or selection),
+  horizontal/vertical distribute; comp-space AABB (accounts for rotation/scale);
+  animated layers keep their motion path. 3D deferred.
+
+  The point of building this when After Effects already ships an Align panel is
+  the box being measured. AE aligns by the layer's *untransformed* rectangle, so
+  a rotated layer sent to the left edge stops short of it — the box it used is
+  not the box you can see. This projects the four corners through
+  `position + R·S·(corner − anchor)` and takes the axis-aligned box of the
+  result, so a square rotated 45° correctly reports a box its diagonal wide. The
+  projection reuses `computeAnchorMove` rather than writing a second cos/sin that
+  could drift from the anchor tool's.
+
+  Every box is measured before any layer moves. "Align to selection" targets the
+  union of the boxes as they are at click time, and distribution needs all the
+  centres up front; reading them while earlier layers had already shifted would
+  chase a moving target. Distribution returns its results positionally rather
+  than sorted, so each layer gets its own destination — it sorts internally on
+  indices and scatters back, which a test pins.
+
+  Animated layers are moved rather than refused: their whole position track
+  shifts by the alignment delta, one constant vector, so path shape, keyframe
+  count and eases all survive. That is the same treatment Anchor Point gives, on
+  purpose — a layer that survives one tool survives the other.
+
+  Refused by name, each a decision rather than an oversight: **3-D layers**
+  (their screen box depends on the camera; the geometry is written on
+  3-component points so depth is an added axis later, not a rewrite),
+  **parented layers** (`position` is in the parent's space, so a comp-space
+  delta would land the layer somewhere else entirely — refusing beats
+  misplacing), separated position dimensions, an expression on position, and
+  cameras/lights. Align via Parent, align to a key layer, and distribute by edge
+  spacing are on the roadmap.
+
 - Re-pivot (Transform tab): change the anchor of a layer with animated position
   by re-baking position keyframes; refuses cases with animated scale/rotation.
   This is exactly the case Smart Anchor Point declines — that tool performs a
