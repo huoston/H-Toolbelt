@@ -7,8 +7,14 @@
   The difference from After Effects' own Align panel is the box being measured:
   this one uses the layer's bounding box in composition space, so a rotated or
   scaled layer aligns by what is actually on screen rather than by its
-  untransformed rectangle. The "Align to" toggle is a mode, not an action — it
-  changes what the six buttons below it mean, so it sits above them.
+  untransformed rectangle.
+
+  The "Align to" toggle is a mode, not an action, so it sits above everything it
+  governs — and it governs the distribute buttons too, not just the six aligns.
+  Against the comp, distribution pushes the outermost layers until they touch
+  the frame; against the selection, the extremes stay put and only the middle
+  moves. It was sending only the align calls at first, which made the toggle
+  look broken for half the panel.
 
   Animated layers are moved, not refused: the host shifts their whole position
   track by the alignment delta, exactly as the Anchor Point tool does.
@@ -61,7 +67,7 @@
     isError = false;
     feedback = "Distributing…";
     try {
-      const res = await evalTS("distributeLayers", axis);
+      const res = await evalTS("distributeLayers", axis, alignTo);
       isError = res.applied === 0;
       feedback = res.message;
     } catch (e: any) {

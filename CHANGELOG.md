@@ -149,6 +149,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Distribute now respects the Align to toggle: Comp spreads layers edge-to-edge
+  across the composition; Selection keeps the previous in-selection spacing.
+
+  The toggle governed only the six alignments, so half the panel silently ignored
+  a control sitting directly above it — distribution always spaced layers within
+  their own span no matter what was selected. `distributeLayers` now takes the
+  target alongside the axis, exactly as `alignLayers` does.
+
+  In **Comp** mode the outermost layer on each side is pushed until its *edge*
+  touches the frame — `lo + half` and `hi - half`, so the box meets the boundary
+  rather than its centre landing on it — and the rest spread evenly between. In
+  **Selection** mode nothing changed: the extremes stay where the user put them.
+
+  The minimums differ by mode, which follows from what each one does: spreading
+  within a selection needs something between the two ends to move (3 layers),
+  while spreading across the comp moves the ends themselves (2 layers). Both
+  messages name their own minimum.
+
+  Interior layers are spaced by centre, so differently sized layers end up evenly
+  *centred* rather than evenly *gapped*; equal edge gaps remains a separate,
+  unimplemented operation. Comp bounds go through the same validation the align
+  path uses, so an unreadable frame refuses rather than spreading to nowhere, and
+  `distributeToBounds` returns positionally like `distributeCenters` — sorted
+  output would hand each layer someone else's destination.
+
 - Align to Comp was ignored for layers (composition bounds resolved to an
   invalid target); resolved comp bounds robustly and refuse on invalid target.
   Clearer message when shapes inside a single layer are selected.

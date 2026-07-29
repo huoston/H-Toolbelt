@@ -29,11 +29,13 @@ import {
   DEFAULT_ALIGN_TO,
   DISTRIBUTE_AXES,
   MIN_DISTRIBUTE_LAYERS,
+  MIN_DISTRIBUTE_TO_BOUNDS,
   aabbFromCorners,
   alignDelta,
   compAabb,
   cornersOfRect,
   distributeCenters,
+  distributeToBounds,
   findAlignMode,
   findAlignTo,
   findDistributeAxis,
@@ -44,6 +46,7 @@ import {
   unionAabb,
   type Aabb,
   type AlignMode,
+  type DistributeItem,
   type Vec3,
 } from "./align";
 
@@ -316,6 +319,115 @@ describe("distributeCenters", () => {
 
   it("collapses to a single point when every centre is identical", () => {
     expect(distributeCenters([50, 50, 50])).toEqual([50, 50, 50]);
+  });
+});
+
+describe("distributeToBounds — edge-to-edge across the comp", () => {
+  const COMP_W = 1920;
+
+  /** Equally sized items: half-extent 50 means a 100-wide box. */
+  const sized = (centers: number[], half: number): DistributeItem[] => {
+    const out: DistributeItem[] = [];
+    for (const c of centers) out.push({ center: c, half: half });
+    return out;
+  };
+
+  it("pushes the outer layers until their edges touch the bounds", () => {
+    const out = distributeToBounds(sized([400, 800, 1200], 50), 0, COMP_W);
+    // First box's left edge at 0 -> centre 50; last box's right edge at 1920
+    // -> centre 1870. The middle sits halfway between those centres.
+    expect(out[0]).toBeCloseTo(50, 9);
+    expect(out[1]).toBeCloseTo(960, 9);
+    expect(out[2]).toBeCloseTo(1870, 9);
+  });
+
+  it("touches, rather than centring on, the bound", () => {
+    // The distinction that makes it look right: a 100-wide box aligned to the
+    // left edge has its centre at 50, not at 0.
+    const out = distributeToBounds(sized([500, 900], 50), 0, COMP_W);
+    expect(out[0] - 50).toBeCloseTo(0, 9); // left edge at 0
+    expect(out[1] + 50).toBeCloseTo(COMP_W, 9); // right edge at 1920
+  });
+
+  it("works with exactly two layers — both just touch", () => {
+    const out = distributeToBounds(sized([100, 200], 25), 0, 1000);
+    expect(out[0]).toBeCloseTo(25, 9);
+    expect(out[1]).toBeCloseTo(975, 9);
+    expect(MIN_DISTRIBUTE_TO_BOUNDS).toBe(2);
+  });
+
+  it("accounts for differently sized layers at the ends", () => {
+    const items: DistributeItem[] = [
+      { center: 300, half: 100 }, // 200 wide, ends up leftmost
+      { center: 700, half: 10 },
+      { center: 1100, half: 40 }, // 80 wide, ends up rightmost
+    ];
+    const out = distributeToBounds(items, 0, COMP_W);
+    expect(out[0]).toBeCloseTo(100, 9); // left edge at 0
+    expect(out[2]).toBeCloseTo(1880, 9); // right edge at 1920
+    expect(out[1]).toBeCloseTo((100 + 1880) / 2, 9); // evenly between centres
+  });
+
+  it("spaces the interior evenly in centre terms", () => {
+    const out = distributeToBounds(sized([0, 1, 2, 3, 4], 20), 0, 1000);
+    for (let i = 2; i < out.length; i++) {
+      expect(out[i] - out[i - 1]).toBeCloseTo(out[1] - out[0], 9);
+    }
+  });
+
+  // Same order contract as distributeCenters: the host pairs results with a
+  // parallel layer array, so sorted output would misassign every destination.
+  it("returns results in the caller's original order", () => {
+    const items: DistributeItem[] = [
+      { center: 1500, half: 50 }, // rightmost
+      { center: 100, half: 50 }, // leftmost
+      { center: 800, half: 50 }, // middle
+    ];
+    const out = distributeToBounds(items, 0, COMP_W);
+    expect(out[1]).toBeCloseTo(50, 9); // the leftmost item, still at index 1
+    expect(out[0]).toBeCloseTo(1870, 9); // the rightmost item, still at index 0
+    expect(out[2]).toBeCloseTo(960, 9);
+  });
+
+  it("orders by position on screen, not by index", () => {
+    const a = distributeToBounds(sized([100, 800, 1500], 50), 0, COMP_W);
+    const b = distributeToBounds(sized([1500, 100, 800], 50), 0, COMP_W);
+    expect(b[1]).toBeCloseTo(a[0], 9);
+    expect(b[2]).toBeCloseTo(a[1], 9);
+    expect(b[0]).toBeCloseTo(a[2], 9);
+  });
+
+  it("is idempotent — running it again changes nothing", () => {
+    const first = distributeToBounds(sized([400, 800, 1200], 50), 0, COMP_W);
+    const again = distributeToBounds(sized(first, 50), 0, COMP_W);
+    for (let i = 0; i < first.length; i++) {
+      expect(again[i]).toBeCloseTo(first[i], 9);
+    }
+  });
+
+  it("leaves fewer than two items alone", () => {
+    expect(distributeToBounds([], 0, COMP_W)).toEqual([]);
+    expect(distributeToBounds(sized([42], 10), 0, COMP_W)).toEqual([42]);
+  });
+
+  it("refuses unreadable bounds by returning the centres unchanged", () => {
+    const items = sized([400, 800, 1200], 50);
+    expect(distributeToBounds(items, NaN, COMP_W)).toEqual([400, 800, 1200]);
+    expect(distributeToBounds(items, 0, Infinity)).toEqual([400, 800, 1200]);
+  });
+
+  it("does not mutate its input", () => {
+    const items = sized([400, 800, 1200], 50);
+    distributeToBounds(items, 0, COMP_W);
+    expect(items[0].center).toBe(400);
+  });
+
+  it("still produces finite results when the layers exceed the bounds", () => {
+    // Boxes wider than the comp cannot both touch without overlapping; the
+    // arithmetic stays defined rather than producing NaN, and the caller sees a
+    // usable (if cramped) layout instead of a silent failure.
+    const out = distributeToBounds(sized([0, 100, 200], 400), 0, 500);
+    for (const c of out) expect(isFinite(c)).toBe(true);
   });
 });
 

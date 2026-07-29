@@ -24,12 +24,13 @@ It applies immediately — there is no separate Apply button.
 
 ### Align to
 
-| Setting        | What the six buttons align against                                    |
+| Setting        | What the buttons below it act against                                 |
 | -------------- | ----------------------------------------------------------------------- |
 | **Comp**       | The composition frame. Default.                                         |
 | **Selection**  | The combined bounding box of the selected layers, measured before any move. |
 
-This is a mode, not an action: it changes what the buttons below it mean.
+This is a mode, not an action: it changes what the buttons below it mean. It
+governs **both** the six alignments **and** the two distributions.
 
 ### Align
 
@@ -53,10 +54,22 @@ layer in the corner.
 | **Horizontal** | Spaces box centres evenly left to right.                            |
 | **Vertical**   | Spaces box centres evenly top to bottom.                            |
 
-The two outermost layers stay exactly where they are; everything between them is
-spread evenly. Order is taken from the layers' positions on screen, not from
-their timeline order. Needs **three or more** layers — with only two there is
-nothing between them to space out.
+Distribution follows the same **Align to** toggle, and the two modes answer
+different questions:
+
+| Align to       | What distribution does                                                                 | Minimum |
+| -------------- | ---------------------------------------------------------------------------------------- | ------- |
+| **Comp**       | The outermost layer on each side is pushed until its **edge touches the comp frame**; the rest spread evenly between. Laying out. | 2 layers |
+| **Selection**  | The two extremes stay exactly where they are; only what is between them moves. Tidying.  | 3 layers |
+
+The minimums differ for a reason: spreading *within* a selection needs something
+between the two ends to move, while spreading *across the comp* moves the ends
+themselves, so two layers is already meaningful.
+
+Order is taken from the layers' positions on screen, not from their timeline
+order. Interior layers are spaced by **centre**, so layers of differing size end
+up evenly centred rather than evenly gapped — equal edge gaps is a different
+operation and is on the roadmap.
 
 ## When it refuses (and why)
 
@@ -67,7 +80,8 @@ still processed.
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `Open a composition first.`                       | No composition is active.                                                                     | Open or select a comp.                            |
 | `Select one or more layers first.`                | Nothing eligible was selected.                                                                | Select at least one layer.                        |
-| `Select 3+ layers to distribute.`                 | Fewer than three eligible layers.                                                             | Select at least three.                            |
+| `Select 3+ layers to distribute.`                 | Fewer than three eligible layers, distributing within the selection.                          | Select at least three, or switch Align to: Comp.  |
+| `Select 2+ layers to distribute.`                 | Fewer than two eligible layers, distributing across the comp.                                 | Select at least two.                              |
 | `3D layers not supported yet`                     | A 3-D layer's on-screen box depends on the camera, which this version does not compute.       | Make the layer 2-D, or align it by hand for now.  |
 | `Parented layers not supported yet`               | `position` is measured in the parent's space, so a comp-space move would land somewhere else. | Unparent, align, then re-parent.                  |
 | `Separated position dimensions: skipped`          | X and Y are distinct properties a combined write cannot reach.                                | Re-join dimensions, align, separate again.        |

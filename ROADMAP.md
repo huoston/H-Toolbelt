@@ -80,12 +80,16 @@ The panel is organised into tabs, so this document is too.
 
 ### Built — lands in v0.2.0
 
-- **Align & Distribute** — six alignments against the comp frame or the
-  selection's own bounds, plus horizontal and vertical distribution. Unlike After
-  Effects' own Align, it measures the layer's bounding box **in composition
-  space**, so a rotated or scaled layer aligns by what is on screen rather than
-  by its untransformed rectangle. Animated layers keep their motion path, exactly
-  as Anchor Point does.
+- **Align & Distribute** — six alignments plus horizontal and vertical
+  distribution, both governed by one **Align to** toggle. Unlike After Effects'
+  own Align, it measures the layer's bounding box **in composition space**, so a
+  rotated or scaled layer aligns by what is on screen rather than by its
+  untransformed rectangle. Animated layers keep their motion path, exactly as
+  Anchor Point does.
+
+  Against the **comp**, distribution pushes the outermost layers until their
+  edges touch the frame and spreads the rest between; against the **selection**,
+  the extremes stay put and only the middle moves.
 
 ### Planned — Align v2
 
@@ -100,8 +104,10 @@ Deliberately out of v1, in rough order of usefulness:
   them means transforming the delta back through the parent chain.
 - **Align to a key layer** — one selected layer as the target, instead of the
   comp or the whole selection.
-- **Distribute by edge spacing** — equal gaps between boxes rather than equal
-  spacing between centres, which is what you want for layers of differing size.
+- **Distribute by equal edge gaps** — equal *space between* boxes rather than
+  equal spacing between centres. Both distribute modes place interior layers by
+  centre today, which is right for uniformly sized layers and looks uneven when
+  sizes differ.
 - **Aligning shapes within a single layer.** Refused today with a message saying
   so. After Effects exposes no per-group bounding box to scripting —
   `sourceRectAtTime` reports the whole layer — the same wall that stopped shape

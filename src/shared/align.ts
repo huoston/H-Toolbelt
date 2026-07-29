@@ -368,6 +368,67 @@ export const alignDelta = (
  * would be a lie about what the function depends on; the axis lives in
  * `DISTRIBUTE_AXES` and at the call site.
  */
+/** One layer's extent along the axis being distributed. */
+export interface DistributeItem {
+  /** Centre of the layer's box on the axis. */
+  center: number;
+  /** Half the box's extent on the axis, so an edge is `center ± half`. */
+  half: number;
+}
+
+/** Minimum layers for the edge-to-edge mode: one for each end. */
+export const MIN_DISTRIBUTE_TO_BOUNDS = 2;
+
+/**
+ * Spread layers edge to edge across `[lo, hi]`.
+ *
+ * The outermost layer on each side is pushed until it *touches* the bound —
+ * `lo + half` and `hi - half`, so the box meets the edge rather than its centre
+ * landing on it — and everything between is spaced evenly in centre terms.
+ *
+ * This is the difference from `distributeCenters`, which keeps the two extremes
+ * exactly where the user put them. Here the extremes move too, because the
+ * target is the composition rather than the selection's own span. Both are
+ * useful; which one you get is the Align-to toggle.
+ *
+ * Half-extents matter only at the ends. The interior is spaced by centre, so
+ * layers of differing size stay evenly *centred* rather than evenly *gapped* —
+ * equal edge gaps is a different operation and is not this one.
+ *
+ * Results come back in the caller's original order, for the same reason as
+ * `distributeCenters`: the host holds a parallel array of layers, and sorted
+ * output would hand each layer someone else's destination.
+ */
+export const distributeToBounds = (
+  items: DistributeItem[],
+  lo: number,
+  hi: number
+): number[] => {
+  const out: number[] = [];
+  if (!items) return out;
+
+  for (let i = 0; i < items.length; i++) out.push(items[i].center);
+  if (items.length < MIN_DISTRIBUTE_TO_BOUNDS) return out;
+  if (!isFinite(lo) || !isFinite(hi)) return out;
+
+  const order: number[] = [];
+  for (let i = 0; i < items.length; i++) order.push(i);
+  order.sort((a, b) => items[a].center - items[b].center);
+
+  const firstIndex = order[0];
+  const lastIndex = order[order.length - 1];
+
+  // Touch, not centre-on: the box's edge meets the bound.
+  const firstCenter = lo + items[firstIndex].half;
+  const lastCenter = hi - items[lastIndex].half;
+
+  const step = (lastCenter - firstCenter) / (order.length - 1);
+  for (let rank = 0; rank < order.length; rank++) {
+    out[order[rank]] = firstCenter + step * rank;
+  }
+  return out;
+};
+
 export const distributeCenters = (centers: number[]): number[] => {
   const out: number[] = [];
   if (!centers) return out;

@@ -45,9 +45,11 @@
 
 import {
   MIN_DISTRIBUTE_LAYERS,
+  MIN_DISTRIBUTE_TO_BOUNDS,
   alignDelta,
   compAabb,
   distributeCenters,
+  distributeToBounds,
   findAlignMode,
   findAlignTo,
   findDistributeAxis,
@@ -56,7 +58,12 @@ import {
   layerAabb,
   unionAabb,
 } from "../../shared/align";
-import type { Aabb, AlignMode, DistributeAxis } from "../../shared/align";
+import type {
+  Aabb,
+  AlignMode,
+  DistributeAxis,
+  DistributeItem,
+} from "../../shared/align";
 import {
   isZeroOffset,
   offsetPositionValue,
@@ -563,13 +570,31 @@ export const alignLayers = (mode: string, alignTo: string): AlignResult => {
 /**
  * Space the selected layers evenly along an axis, by their box centres.
  *
- * The two extremes stay put and everything between them is spread evenly, which
- * is what makes the operation feel like tidying rather than rearranging.
+ * The Align-to toggle governs this as much as it governs alignment, and the two
+ * modes answer different questions:
+ *
+ *   - **Selection** — the two extremes stay exactly where the user put them and
+ *     everything between is spread evenly. Tidying, not rearranging.
+ *   - **Comp** — the outermost layer on each side is pushed until its edge
+ *     touches the composition frame, and the rest spread between. Laying out,
+ *     not tidying.
+ *
+ * That is also why the minimums differ: spreading *within* a selection needs
+ * something between the two ends to move (3), while spreading *across the comp*
+ * moves the ends themselves, so two layers is already meaningful.
  */
-export const distributeLayers = (axis: string): AlignResult => {
+export const distributeLayers = (
+  axis: string,
+  distributeTo: string
+): AlignResult => {
   const resolvedAxis = findDistributeAxis(axis);
   if (!resolvedAxis) {
     return { applied: 0, message: "Unknown distribute axis: " + axis };
+  }
+
+  const resolvedTarget = findAlignTo(distributeTo);
+  if (!resolvedTarget) {
+    return { applied: 0, message: "Unknown distribute target: " + distributeTo };
   }
 
   const comp = app.project.activeItem;
@@ -584,15 +609,31 @@ export const distributeLayers = (axis: string): AlignResult => {
     return { applied: 0, message: SHAPES_IN_LAYER_MESSAGE };
   }
 
-  const tooFew = "Select " + MIN_DISTRIBUTE_LAYERS + "+ layers to distribute.";
+  const toComp = resolvedTarget === "comp";
+  const horizontal = (resolvedAxis as DistributeAxis) === "x";
+
+  // Resolve the frame before touching anything, as the align path does: a comp
+  // whose bounds cannot be read is a refusal, not a spread across nowhere.
+  let frame: Aabb | null = null;
+  if (toComp) {
+    frame = compTarget(comp);
+    if (!frame) {
+      return { applied: 0, message: BAD_COMP_BOUNDS_MESSAGE };
+    }
+  }
+
+  const minimum = toComp ? MIN_DISTRIBUTE_TO_BOUNDS : MIN_DISTRIBUTE_LAYERS;
+  const tooFew = "Select " + minimum + "+ layers to distribute.";
   const skips = newSkipLog();
   let applied = 0;
 
-  app.beginUndoGroup("H-Toolbelt: Distribute (" + resolvedAxis + ")");
+  app.beginUndoGroup(
+    "H-Toolbelt: Distribute (" + resolvedAxis + ", " + resolvedTarget + ")"
+  );
   try {
     const measured = measureSelection(comp, skips);
 
-    if (measured.length < MIN_DISTRIBUTE_LAYERS) {
+    if (measured.length < minimum) {
       // Not an error worth a skip log entry: the user simply picked too few.
       return {
         applied: 0,
@@ -603,18 +644,26 @@ export const distributeLayers = (axis: string): AlignResult => {
       };
     }
 
-    const horizontal = (resolvedAxis as DistributeAxis) === "x";
-
     const centers: number[] = [];
+    const items: DistributeItem[] = [];
     for (let i = 0; i < measured.length; i++) {
       const b = measured[i].box;
-      centers.push(
-        horizontal ? (b.minX + b.maxX) / 2 : (b.minY + b.maxY) / 2
-      );
+      const center = horizontal ? (b.minX + b.maxX) / 2 : (b.minY + b.maxY) / 2;
+      const half = horizontal
+        ? (b.maxX - b.minX) / 2
+        : (b.maxY - b.minY) / 2;
+      centers.push(center);
+      items.push({ center: center, half: half });
     }
 
-    // Positional results: `targets[i]` belongs to `measured[i]`.
-    const targets = distributeCenters(centers);
+    // Positional results either way: `targets[i]` belongs to `measured[i]`.
+    const targets = toComp
+      ? distributeToBounds(
+          items,
+          horizontal ? (frame as Aabb).minX : (frame as Aabb).minY,
+          horizontal ? (frame as Aabb).maxX : (frame as Aabb).maxY
+        )
+      : distributeCenters(centers);
 
     for (let i = 0; i < measured.length; i++) {
       const shift = targets[i] - centers[i];
