@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Easings: card grid with curve thumbnails and hover hints; full bezier library
+  (Easy Ease, Linear, Sine, Quad, Cubic, Expo — in/out/in-out), 14 curves.
+
+  Six ad-hoc presets became a named library, and the row of text buttons became a
+  grid of cards that each **draw their own curve** over a dashed linear
+  reference. Fourteen names in a list is a reading task; fourteen shapes is a
+  glance. The name and a one-line description are still there, on the card and in
+  the tooltip. Clicking a card loads the curve into the editor and does not
+  apply — Apply stays separate, so browsing the library never writes to anyone's
+  keyframes.
+
+  Presets gained `id`, `kind` and `hint`. `kind` is `"bezier"` for all fourteen
+  and exists because overshoot easings — Back, Elastic, Bounce — cannot be
+  monotonic cubic beziers at all: they leave the unit square, and no pair of
+  keyframe influence/speed values can describe that. They will arrive as
+  generated expressions and join this same list with a different kind, so the
+  list's shape does not have to change under the UI when they do. Tests pin that
+  every current preset stays inside the box, which is what makes it legal for the
+  keyframe engine.
+
+  The engine is untouched: `bezierToTemporalEase`, `clamp`, the influence
+  constants and the host's `applyEasing` are all byte-identical, as is
+  `CurveEditor`. Only the data grew and new UI arrived. The engine tests were
+  decoupled from preset *names* — they now assert against literal curves, since a
+  rename or reordering of the library is not a change to the maths and should not
+  break tests that are about it.
+
+  Five old labels are gone (`Ease Out`, `Ease In`, `Ease In-Out`, and both
+  `Strong` variants), replaced by the named families. `Easy Ease` survives
+  unchanged.
+
 - Align & Distribute (Transform tab): 6 aligns (comp or selection),
   horizontal/vertical distribute; comp-space AABB (accounts for rotation/scale);
   animated layers keep their motion path. 3D deferred.

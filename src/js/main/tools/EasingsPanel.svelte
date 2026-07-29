@@ -24,6 +24,7 @@
   import { EASING_PRESETS } from "../../../shared/easing";
   import type { Bezier, EasingPreset } from "../../../shared/easing";
   import CurveEditor from "../CurveEditor.svelte";
+  import EasingCard from "./EasingCard.svelte";
 
   // Local alias for the preset list, iterated by the markup below.
   //
@@ -48,14 +49,14 @@
 
   // Highlight the preset whose curve exactly matches the editor; dragging away
   // from a preset clears the highlight automatically.
-  const activeLabel = $derived(
+  const activeId = $derived(
     presets.find(
       (p) =>
         p.bezier[0] === bezier[0] &&
         p.bezier[1] === bezier[1] &&
         p.bezier[2] === bezier[2] &&
         p.bezier[3] === bezier[3]
-    )?.label ?? null
+    )?.id ?? null
   );
 
   // Clicking a preset loads its curve into the editor (handles jump); it does
@@ -88,22 +89,6 @@
   <CurveEditor bind:bezier />
 
   <div class="htb-easings-side">
-    <div class="htb-grid">
-      {#each presets as preset (preset.label)}
-        <!-- Kept as text: the preset's name *is* the information, and no glyph
-             distinguishes "Ease Out" from "Ease Out Strong". The tooltip adds
-             the curve numbers, which the name cannot carry. -->
-        <button
-          class="htb-preset"
-          class:htb-active={activeLabel === preset.label}
-          title={`Load ${preset.label} (${preset.bezier.join(", ")}) into the editor`}
-          onclick={() => loadPreset(preset)}
-        >
-          {preset.label}
-        </button>
-      {/each}
-    </div>
-
     <div class="htb-actions">
       <button
         class="htb-apply"
@@ -113,6 +98,20 @@
       >
     </div>
   </div>
+</div>
+
+<!-- The library. Each card shows its own curve, so the shape is browsable
+     without reading fourteen names; the name and its description are still
+     there, on the card and in the tooltip. -->
+<div class="htb-ease-grid">
+  {#each presets as preset (preset.id)}
+    <EasingCard
+      {preset}
+      active={activeId === preset.id}
+      disabled={busy}
+      onselect={loadPreset}
+    />
+  {/each}
 </div>
 
 <p class="htb-feedback" class:htb-error={isError} aria-live="polite">
@@ -135,47 +134,13 @@
     gap: 8px;
   }
 
-  .htb-grid {
+  // Cards are ~64px wide at their narrowest, so this lands 2-3 per row in a
+  // docked panel and more when the user widens it, without ever cutting one off.
+  .htb-ease-grid {
     display: grid;
-    // Fills the column beside the editor, collapsing to one per row when the
-    // panel is docked narrow.
-    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-    gap: 6px;
-  }
-
-  .htb-preset {
-    appearance: none;
-    padding: 8px 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--htb-text, #e0e0e0);
-    background-color: var(--htb-surface, #2a2a2a);
-    border: 1px solid var(--htb-border, #3a3a3a);
-    border-radius: 4px;
-    cursor: pointer;
-    user-select: none;
-    transition:
-      background-color 0.12s ease,
-      border-color 0.12s ease;
-  }
-
-  .htb-preset:hover:not(:disabled) {
-    background-color: var(--htb-surface-hover, #333333);
-    border-color: var(--htb-accent, #2f6fb0);
-  }
-
-  .htb-preset:active:not(:disabled) {
-    background-color: var(--htb-accent, #2f6fb0);
-  }
-
-  .htb-preset:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
-  .htb-preset.htb-active {
-    border-color: var(--htb-accent, #2f6fb0);
-    background-color: var(--htb-surface-hover, #333333);
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 5px;
+    margin-top: 10px;
   }
 
   .htb-actions {

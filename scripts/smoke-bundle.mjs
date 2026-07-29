@@ -54,14 +54,19 @@ const UI_SRC_DIRS = [join("src", "js", "main")];
 // array still has its contents. P02a was a values-vanished bug, not a
 // names-vanished one.
 const REQUIRED_TOKENS = [
-  // shared/easing — EASING_PRESETS
+  // shared/easing — EASING_PRESETS. One label per family plus the endpoints of
+  // the range, rather than all fourteen: enough that an emptied or truncated
+  // library fails here, without the list needing an edit every time a preset is
+  // renamed.
   '"Easy Ease"',
-  '"Ease Out"',
-  '"Ease In"',
-  '"Ease In-Out"',
-  '"Ease Out Strong"',
-  '"Ease In-Out Strong"',
+  '"Linear"',
+  '"Sine In-Out"',
+  '"Quad Out"',
+  '"Cubic In-Out"',
+  '"Expo Out"',
+  // Control points, because a label surviving does not prove its curve did.
   "0.333",
+  "0.87",
   // shared/loop — LOOP_TYPES / LOOP_DIRECTIONS ids, which are also the strings
   // baked into the generated expression text.
   '"pingpong"',
