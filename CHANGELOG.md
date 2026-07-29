@@ -147,6 +147,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   merely under consideration, with no dates. The bug template leads with the
   message shown in the panel, since the refusals are written to be diagnostic.
 
+### Fixed
+
+- Align to Comp was ignored for layers (composition bounds resolved to an
+  invalid target); resolved comp bounds robustly and refuse on invalid target.
+  Clearer message when shapes inside a single layer are selected.
+
+  The reason it was *silent* rather than an error is the part worth recording.
+  A non-finite bound reaching `alignDelta` yields a NaN delta, and `isZeroOffset`
+  answers **true** for NaN — a deliberate and correct choice in the anchor tool,
+  where an unreadable value means "leave the layer alone". Align reused it and so
+  read NaN as "already in place": the layer was counted as aligned, `applied` was
+  incremented, and the panel reported *"Aligned N layer(s)"* while nothing moved.
+  The comp target is also the only place external numbers enter the computation
+  — the selection target is built from layer boxes this code measures itself —
+  which is exactly why "Align to Selection" never showed the fault.
+
+  Three guards now make that failure impossible to be silent: composition width
+  and height are read into locals and validated as finite and positive before
+  becoming a target (refusing with `Could not read composition bounds.`); each
+  layer's box is checked after projection; and `shiftPosition` tests
+  `isFiniteDelta` **before** the zero test, so non-finite is a failure rather
+  than a no-op. `isZeroOffset` itself is unchanged — it is right for its own
+  tool, and a test now pins both its NaN behaviour and the fact that Align no
+  longer depends on it for that judgement.
+
+  A related detail, pinned by test because it explains the confusing shape of the
+  report: `compAabb` hardcodes `minX`/`minY` to 0, so an unreadable *width* would
+  leave `left` and `top` working while `right`, `bottom` and both centres quietly
+  did nothing. Validating the whole box up front removes that partial failure.
+
+- Selecting shape groups inside a single shape layer answered
+  `Select 3+ layers to distribute.` — true but baffling to someone who had just
+  selected three shapes — and, for align, silently moved the whole layer instead.
+  Both now report that aligning shapes within a layer is not supported yet and
+  say to select layers instead. After Effects exposes no per-group bounding box
+  to scripting, the same wall that stopped shape flattening; it is on the roadmap
+  as one investigation serving both tools.
+
 ### Changed
 
 - Merged Anchor Point and Re-pivot into a single Anchor Point tool that

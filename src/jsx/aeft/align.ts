@@ -51,6 +51,8 @@ import {
   findAlignMode,
   findAlignTo,
   findDistributeAxis,
+  isFiniteAabb,
+  isFiniteDelta,
   layerAabb,
   unionAabb,
 } from "../../shared/align";
@@ -86,6 +88,22 @@ const BOUNDED_LAYER_TYPES = [MN_LAYER_VECTOR, MN_LAYER_TEXT, MN_LAYER_AV];
 
 const NO_COMP_MESSAGE = "Open a composition first.";
 const NO_SELECTION_MESSAGE = "Select one or more layers first.";
+const BAD_COMP_BOUNDS_MESSAGE = "Could not read composition bounds.";
+
+/**
+ * Shown when the selection is shape groups inside a layer rather than layers.
+ *
+ * After Effects exposes no per-group bounding box to scripting —
+ * `sourceRectAtTime` reports the whole layer — which is the same wall the shape
+ * flatten work hit. Without this the tool would either report "Select 3+ layers"
+ * (true but baffling, since the user selected three things) or, worse, silently
+ * align the whole layer when the user asked to align the shapes inside it.
+ */
+const SHAPES_IN_LAYER_MESSAGE =
+  "Aligning shapes within a layer isn't supported yet - select layers instead.";
+
+/** A shape group inside a shape layer's Contents. */
+const MN_VECTOR_GROUP = "ADBE Vector Group";
 
 /* -------------------------------------------------------------------------- */
 /* Refusal accumulation                                                        */
@@ -211,6 +229,60 @@ const numAtTime = (p: Property | null, t: number, fallback: number): number => {
   }
 };
 
+/**
+ * How many shape groups are selected across the comp's selected layers.
+ *
+ * Selecting a group inside a shape layer also selects its layer, so the layer
+ * count alone cannot tell the two intents apart; this can.
+ */
+const countSelectedShapeGroups = (comp: CompItem): number => {
+  let n = 0;
+  const layers = comp.selectedLayers;
+  for (let li = 0; li < layers.length; li++) {
+    let sel: PropertyBase[];
+    try {
+      sel = layers[li].selectedProperties;
+    } catch (e) {
+      continue;
+    }
+    for (let pi = 0; pi < sel.length; pi++) {
+      try {
+        if (sel[pi].matchName === MN_VECTOR_GROUP) n++;
+      } catch (e) {
+        // Unreadable property; not a group as far as we can tell.
+      }
+    }
+  }
+  return n;
+};
+
+/**
+ * The composition frame as an alignment target, or null when its dimensions
+ * cannot be read as real numbers.
+ *
+ * Read into locals and validated rather than passed straight through: these are
+ * the only values in the whole computation that come from outside the layer
+ * measurements, so they are the only place a non-finite bound can enter. The
+ * selection target is built from boxes this code already measured and validated.
+ */
+const compTarget = (comp: CompItem): Aabb | null => {
+  let width: number;
+  let height: number;
+  try {
+    width = comp.width;
+    height = comp.height;
+  } catch (e) {
+    return null;
+  }
+
+  if (typeof width !== "number" || typeof height !== "number") return null;
+  if (!isFinite(width) || !isFinite(height)) return null;
+  if (width <= 0 || height <= 0) return null;
+
+  const box = compAabb(width, height);
+  return isFiniteAabb(box) ? box : null;
+};
+
 /** Ask AE for the bounding box and judge the answer rather than predicting it. */
 const probeRect = (layer: Layer, time: number): SourceRect | null => {
   let rect: SourceRect | null = null;
@@ -329,6 +401,13 @@ const measureLayer = (
     rotation
   );
 
+  // A non-finite bound would become a NaN delta, which the zero-check downstream
+  // reads as "nothing to do" — the layer would be counted as aligned and never
+  // move. Refuse here, where the cause is still visible.
+  if (!isFiniteAabb(box)) {
+    return "Unreadable layer bounds: skipped " + name;
+  }
+
   out.push({ layer: layer, positionProp: positionProp, box: box });
   return null;
 };
@@ -364,6 +443,13 @@ const shiftPosition = (
   delta: Vec2,
   time: number
 ): boolean => {
+  // Checked BEFORE the zero test, and that order is the whole point.
+  // `isZeroOffset` answers true for NaN — a deliberate choice in the anchor
+  // tool, where an unreadable value means "leave it alone". Here it would mean
+  // "report this layer as aligned and move nothing", which is how an invalid
+  // target used to pass as success. Non-finite is a failure, not a no-op.
+  if (!isFiniteDelta(delta)) return false;
+
   // Already where it belongs: do not dirty the project rewriting values with
   // what they already hold. Counted as applied by the caller, since the layer
   // *is* aligned — it just needed nothing done to it.
@@ -420,6 +506,23 @@ export const alignLayers = (mode: string, alignTo: string): AlignResult => {
     return { applied: 0, message: NO_COMP_MESSAGE };
   }
 
+  // Shape groups take priority over their layer, as in Anchor Point: a user who
+  // selected three polystars means those, not the layer holding them. Say so
+  // rather than quietly aligning the layer instead.
+  if (countSelectedShapeGroups(comp) > 0) {
+    return { applied: 0, message: SHAPES_IN_LAYER_MESSAGE };
+  }
+
+  // Resolve the target before touching anything. A comp whose bounds cannot be
+  // read is a refusal, not an alignment to nowhere.
+  let target: Aabb | null = null;
+  if (resolvedTarget === "comp") {
+    target = compTarget(comp);
+    if (!target) {
+      return { applied: 0, message: BAD_COMP_BOUNDS_MESSAGE };
+    }
+  }
+
   const skips = newSkipLog();
   let applied = 0;
 
@@ -431,13 +534,11 @@ export const alignLayers = (mode: string, alignTo: string): AlignResult => {
     const measured = measureSelection(comp, skips);
 
     if (measured.length > 0) {
-      const boxes: Aabb[] = [];
-      for (let i = 0; i < measured.length; i++) boxes.push(measured[i].box);
-
-      const target: Aabb =
-        resolvedTarget === "comp"
-          ? compAabb(comp.width, comp.height)
-          : unionAabb(boxes);
+      if (!target) {
+        const boxes: Aabb[] = [];
+        for (let i = 0; i < measured.length; i++) boxes.push(measured[i].box);
+        target = unionAabb(boxes);
+      }
 
       for (let i = 0; i < measured.length; i++) {
         const m = measured[i];
@@ -474,6 +575,13 @@ export const distributeLayers = (axis: string): AlignResult => {
   const comp = app.project.activeItem;
   if (!(comp instanceof CompItem)) {
     return { applied: 0, message: NO_COMP_MESSAGE };
+  }
+
+  // The case that used to answer "Select 3+ layers" to someone who had just
+  // selected three shapes. Their selection was not too small; it was the wrong
+  // kind of thing, and only this message says so.
+  if (countSelectedShapeGroups(comp) > 0) {
+    return { applied: 0, message: SHAPES_IN_LAYER_MESSAGE };
   }
 
   const tooFew = "Select " + MIN_DISTRIBUTE_LAYERS + "+ layers to distribute.";

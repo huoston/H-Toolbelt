@@ -279,6 +279,46 @@ export const compAabb = (width: number, height: number): Aabb => {
   return { minX: 0, minY: 0, maxX: width, maxY: height };
 };
 
+/**
+ * Is every edge of this box a real number?
+ *
+ * Load-bearing, and the reason it exists: a non-finite bound propagates through
+ * `alignDelta` into a NaN delta, and `isZeroOffset` — written for the anchor
+ * tool, where "unreadable means nothing to do" is the safe reading — answers
+ * `true` for NaN. Align would then treat the layer as already in place, report
+ * success, and move nothing. "It says Aligned and nothing happens" is a far
+ * worse failure than a refusal, so every box is checked before it is used.
+ */
+export const isFiniteAabb = (box: Aabb): boolean => {
+  if (!box) return false;
+  return (
+    typeof box.minX === "number" &&
+    typeof box.minY === "number" &&
+    typeof box.maxX === "number" &&
+    typeof box.maxY === "number" &&
+    isFinite(box.minX) &&
+    isFinite(box.minY) &&
+    isFinite(box.maxX) &&
+    isFinite(box.maxY)
+  );
+};
+
+/**
+ * Is this delta safe to apply?
+ *
+ * Zero is safe — it means the layer is already where it belongs. NaN and
+ * Infinity are not, and must never reach a position write.
+ */
+export const isFiniteDelta = (delta: Vec2): boolean => {
+  if (!delta) return false;
+  return (
+    typeof delta[0] === "number" &&
+    typeof delta[1] === "number" &&
+    isFinite(delta[0]) &&
+    isFinite(delta[1])
+  );
+};
+
 /* -------------------------------------------------------------------------- */
 /* Alignment                                                                  */
 /* -------------------------------------------------------------------------- */

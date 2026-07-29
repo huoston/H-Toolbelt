@@ -74,6 +74,9 @@ still processed.
 | `Position has an expression (not moved)`          | An expression would override the write, so the tool would report success while nothing moved. | Disable or bake the expression first.             |
 | `Camera/Light has no bounds`                      | Cameras and lights have no source rectangle.                                                  | Nothing — they have no box to align.              |
 | `No bounding box available`                       | After Effects returned no usable rectangle.                                                   | Check the layer has visible content at this time. |
+| `Aligning shapes within a layer isn't supported yet - select layers instead.` | You selected shape groups inside a shape layer rather than layers. After Effects exposes no per-group bounding box to scripting. | Select the layers themselves. Per-group bounds are on the roadmap. |
+| `Could not read composition bounds.`              | The composition's width or height came back unreadable, so there is no target to align to.    | Unusual; please open an issue naming your comp settings. |
+| `Unreadable layer bounds: skipped`                | The layer's box worked out to a non-numeric value.                                            | Unusual; please open an issue with the `matchName` shown. |
 
 On success: `Aligned 4 layer(s)` or `Distributed 5 layer(s)`, plus a
 `; skipped N: <reason>` note when part of the selection was declined.
@@ -109,3 +112,8 @@ Deferred to a later release, tracked on the [roadmap](../ROADMAP.md):
   or the whole selection.
 - **Distribute by edge spacing** — equal gaps between boxes rather than equal
   spacing between centres.
+- **Aligning shapes within a single layer.** Selecting several groups inside one
+  shape layer is refused today. After Effects exposes no per-group bounding box
+  to scripting — `sourceRectAtTime` reports the whole layer — which is the same
+  wall the shape-layer cleanup hit. Doing it properly means deriving each group's
+  bounds from its own path data.

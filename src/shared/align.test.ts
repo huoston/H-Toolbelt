@@ -22,9 +22,11 @@
 
 import { describe, it, expect } from "vitest";
 import type { SourceRect, Vec2 } from "./anchor";
+import { isZeroOffset } from "./anchor";
 import {
   ALIGN_MODES,
   ALIGN_TARGETS,
+  DEFAULT_ALIGN_TO,
   DISTRIBUTE_AXES,
   MIN_DISTRIBUTE_LAYERS,
   aabbFromCorners,
@@ -35,6 +37,8 @@ import {
   findAlignMode,
   findAlignTo,
   findDistributeAxis,
+  isFiniteAabb,
+  isFiniteDelta,
   layerAabb,
   projectCorner,
   unionAabb,
@@ -312,6 +316,113 @@ describe("distributeCenters", () => {
 
   it("collapses to a single point when every centre is identical", () => {
     expect(distributeCenters([50, 50, 50])).toEqual([50, 50, 50]);
+  });
+});
+
+describe("regression: Align to Comp was silently ignored", () => {
+  /**
+   * The failure had two halves, and only the second made it invisible.
+   *
+   * A non-finite bound reaching `alignDelta` produces a NaN delta. `isZeroOffset`
+   * — written for the anchor tool, where an unreadable value means "leave it
+   * alone" — answers TRUE for NaN. Align read that as "already in place",
+   * counted the layer as done and moved nothing, so the panel reported
+   * "Aligned N layer(s)" while the comp never changed.
+   *
+   * The comp target is the only place external numbers enter the computation:
+   * the selection target is built from layer boxes this code measured itself,
+   * which is why "Align to Selection" never showed the bug.
+   */
+  it("still swallows NaN in isZeroOffset — the trap this guards against", () => {
+    // Not a bug in isZeroOffset: correct for its own tool, wrong to rely on here.
+    expect(isZeroOffset([NaN, NaN])).toBe(true);
+    expect(isZeroOffset([Infinity, 0])).toBe(true);
+  });
+
+  it("isFiniteDelta separates 'nothing to do' from 'invalid'", () => {
+    expect(isFiniteDelta([0, 0])).toBe(true); // nothing to do, still valid
+    expect(isFiniteDelta([12, -4])).toBe(true);
+    expect(isFiniteDelta([NaN, 0])).toBe(false);
+    expect(isFiniteDelta([0, NaN])).toBe(false);
+    expect(isFiniteDelta([Infinity, 0])).toBe(false);
+    expect(isFiniteDelta(null as unknown as [number, number])).toBe(false);
+  });
+
+  it("isFiniteAabb rejects any unreadable edge", () => {
+    expect(isFiniteAabb({ minX: 0, minY: 0, maxX: 1920, maxY: 1080 })).toBe(true);
+    expect(isFiniteAabb({ minX: NaN, minY: 0, maxX: 1920, maxY: 1080 })).toBe(false);
+    expect(isFiniteAabb({ minX: 0, minY: 0, maxX: Infinity, maxY: 1080 })).toBe(false);
+    expect(
+      isFiniteAabb({
+        minX: 0,
+        minY: 0,
+        maxX: undefined as unknown as number,
+        maxY: 1080,
+      })
+    ).toBe(false);
+    expect(isFiniteAabb(null as unknown as Aabb)).toBe(false);
+  });
+
+  it("a comp target built from unreadable dimensions is caught, not applied", () => {
+    // What the host now refuses on, instead of producing a NaN delta.
+    const bad = compAabb(undefined as unknown as number, 1080);
+    expect(isFiniteAabb(bad)).toBe(false);
+
+    const layer: Aabb = { minX: 100, minY: 200, maxX: 300, maxY: 400 };
+    const delta = alignDelta(layer, bad, "right");
+    expect(isFiniteDelta(delta)).toBe(false);
+    // The old path: NaN delta read as "already aligned", counted as success.
+    expect(isZeroOffset(delta)).toBe(true);
+  });
+
+  it("an unreadable width corrupts only the edges that use it", () => {
+    // Worth pinning because it explains the failure's shape: `compAabb` hardcodes
+    // minX/minY to 0, so a bad *width* leaves `left` and `top` working while
+    // `right`, `bottom` and both centres quietly do nothing. Validating the whole
+    // box up front is what makes that partial, confusing failure impossible.
+    const bad = compAabb(undefined as unknown as number, 1080);
+    const layer: Aabb = { minX: 100, minY: 200, maxX: 300, maxY: 400 };
+
+    expect(isFiniteDelta(alignDelta(layer, bad, "left"))).toBe(true);
+    expect(isFiniteDelta(alignDelta(layer, bad, "top"))).toBe(true);
+    expect(isFiniteDelta(alignDelta(layer, bad, "right"))).toBe(false);
+    expect(isFiniteDelta(alignDelta(layer, bad, "hcenter"))).toBe(false);
+
+    // Height is readable here, so the vertical pair survives.
+    expect(isFiniteDelta(alignDelta(layer, bad, "bottom"))).toBe(true);
+    expect(isFiniteDelta(alignDelta(layer, bad, "vcenter"))).toBe(true);
+  });
+
+  it("computes the right delta once the comp bounds are real", () => {
+    // The arithmetic was never wrong; only the value reaching it was.
+    const comp = compAabb(1920, 1080);
+    const layer: Aabb = { minX: 100, minY: 200, maxX: 300, maxY: 400 };
+
+    expect(isFiniteAabb(comp)).toBe(true);
+    expect(alignDelta(layer, comp, "left")).toEqual([-100, 0]);
+    expect(alignDelta(layer, comp, "right")).toEqual([1620, 0]);
+    expect(alignDelta(layer, comp, "top")).toEqual([0, -200]);
+    expect(alignDelta(layer, comp, "bottom")).toEqual([0, 680]);
+    expect(alignDelta(layer, comp, "hcenter")).toEqual([760, 0]);
+    expect(alignDelta(layer, comp, "vcenter")).toEqual([0, 240]);
+
+    for (const mode of ALIGN_MODES) {
+      expect(isFiniteDelta(alignDelta(layer, comp, mode.id))).toBe(true);
+    }
+  });
+
+  it("keeps the toggle token identical on both sides of the bridge", () => {
+    // The UI sends these ids verbatim and the host resolves them with
+    // findAlignTo. A casing drift on either side would route every click to the
+    // wrong branch, so the exact strings are pinned here.
+    expect(ALIGN_TARGETS[0].id).toBe("comp");
+    expect(ALIGN_TARGETS[1].id).toBe("selection");
+    expect(DEFAULT_ALIGN_TO).toBe("comp");
+    expect(findAlignTo(DEFAULT_ALIGN_TO)).toBe("comp");
+
+    // Casing must not resolve: a silent match would hide a real mismatch.
+    expect(findAlignTo("Comp")).toBeNull();
+    expect(findAlignTo("Selection")).toBeNull();
   });
 });
 

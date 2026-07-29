@@ -102,6 +102,11 @@ Deliberately out of v1, in rough order of usefulness:
   comp or the whole selection.
 - **Distribute by edge spacing** — equal gaps between boxes rather than equal
   spacing between centres, which is what you want for layers of differing size.
+- **Aligning shapes within a single layer.** Refused today with a message saying
+  so. After Effects exposes no per-group bounding box to scripting —
+  `sourceRectAtTime` reports the whole layer — the same wall that stopped shape
+  flattening in Shape Layer Magic. Supporting it means deriving each group's
+  bounds from its own path data, so it is one investigation serving both tools.
 
 ---
 
