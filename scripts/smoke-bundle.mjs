@@ -71,6 +71,12 @@ const REQUIRED_TOKENS = [
   '"hcenter"',
   '"vcenter"',
   '"selection"',
+  // main/icons — path data for the icon set. The imported-symbol scan proves a
+  // binding named ICONS exists; these prove the glyphs still have geometry, so
+  // an emptied map cannot ship as a panel full of blank buttons.
+  '"align-left"',
+  '"tab-motion"',
+  "M2 2V14",
 ];
 
 const fail = (msg) => {

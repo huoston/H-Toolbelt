@@ -43,11 +43,14 @@
   import AnchorPanel from "./tools/AnchorPanel.svelte";
   import AlignPanel from "./tools/AlignPanel.svelte";
   import ShapePanel from "./tools/ShapePanel.svelte";
+  import About from "./About.svelte";
+  import Icon from "./icons/Icon.svelte";
   import { initAeTheme } from "./theme";
   import "../index.scss";
   import "./main.scss";
 
   let activeTab: TabId = $state(DEFAULT_TAB);
+  let aboutOpen: boolean = $state(false);
 
   onMount(() => {
     // Theming is optional enrichment; failure must not blank the panel.
@@ -62,6 +65,15 @@
 <main class="htb">
   <header class="htb-head">
     <h1 class="htb-title">H-Toolbelt</h1>
+    <button
+      class="htb-help"
+      type="button"
+      title="About H-Toolbelt"
+      aria-label="About H-Toolbelt"
+      onclick={() => (aboutOpen = true)}
+    >
+      <Icon name="help" size={15} />
+    </button>
   </header>
 
   <Tabs bind:active={activeTab} />
@@ -131,6 +143,9 @@
       </section>
     </div>
   </div>
+
+  <!-- Overlays the panel; the tool panels behind it stay mounted. -->
+  <About bind:open={aboutOpen} />
 </main>
 
 <style lang="scss">
@@ -144,6 +159,10 @@
   }
 
   .htb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     margin-bottom: 10px;
   }
 
@@ -152,6 +171,33 @@
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.02em;
+  }
+
+  .htb-help {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 4px;
+    color: var(--htb-text-muted, #9a9a9a);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    transition:
+      color 0.12s ease,
+      border-color 0.12s ease;
+  }
+
+  .htb-help:hover {
+    color: var(--htb-text, #e0e0e0);
+    border-color: var(--htb-border, #3a3a3a);
+  }
+
+  .htb-help:focus-visible {
+    outline: 1px solid var(--htb-accent, #2f6fb0);
+    outline-offset: 1px;
   }
 
   // The whole point of the tab shell: hidden, not destroyed. Every tool keeps

@@ -111,7 +111,12 @@
   {/if}
 
   <div class="htb-seq-actions">
-    <button class="htb-apply" disabled={busy} onclick={apply}>Apply</button>
+    <button
+      class="htb-apply"
+      disabled={busy}
+      title="Stagger the selected layers by the offset above"
+      onclick={apply}>Apply</button
+    >
   </div>
 
   <p class="htb-feedback" class:htb-error={isError} aria-live="polite">

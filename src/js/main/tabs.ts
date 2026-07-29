@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import type { IconName } from "./icons/icons";
+
 /** Add "compositing" here when the tab gains its first tool. */
 export type TabId = "motion" | "transform" | "shapes";
 
@@ -27,23 +29,28 @@ export interface TabSpec {
   label: string;
   /** Tooltip: what the user will find under the tab. */
   title: string;
+  /** Glyph shown beside the label. Navigation keeps both. */
+  icon: IconName;
 }
 
 export const TABS: TabSpec[] = [
   {
     id: "motion",
     label: "Motion",
-    title: "Easings, sequencing and expression effects.",
+    title: "Easings, sequencing, expression effects and loops.",
+    icon: "tab-motion",
   },
   {
     id: "transform",
     label: "Transform",
-    title: "Anchor point.",
+    title: "Anchor point, align and distribute.",
+    icon: "tab-transform",
   },
   {
     id: "shapes",
     label: "Shapes",
     title: "Shape layer cleanup.",
+    icon: "tab-shapes",
   },
 ];
 

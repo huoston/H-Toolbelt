@@ -23,6 +23,7 @@
 <script lang="ts">
   import { TABS, tabButtonId, tabPanelId } from "./tabs";
   import type { TabId } from "./tabs";
+  import Icon from "./icons/Icon.svelte";
 
   let { active = $bindable() }: { active: TabId } = $props();
 
@@ -69,7 +70,10 @@
       onclick={() => (active = tab.id)}
       onkeydown={(e) => onKeydown(e, i)}
     >
-      {tab.label}
+      <!-- Icon *and* label: navigation is the one place where guessing costs
+           the user a click to find out where they are. -->
+      <Icon name={tab.icon} size={14} />
+      <span class="htb-tab-label">{tab.label}</span>
     </button>
   {/each}
 </div>
@@ -87,9 +91,13 @@
 
   .htb-tab {
     appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     flex: 1 1 auto;
     min-width: 72px;
-    padding: 7px 12px;
+    padding: 7px 10px;
     font-size: 11px;
     font-weight: 600;
     font-family: inherit;
@@ -107,6 +115,18 @@
     transition:
       color 0.12s ease,
       border-color 0.12s ease;
+  }
+
+  // Drops out first on a narrow docked panel: the icon plus the tooltip still
+  // identify the tab, and three truncated words identify nothing.
+  .htb-tab-label {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 260px) {
+    .htb-tab-label {
+      display: none;
+    }
   }
 
   .htb-tab:hover {

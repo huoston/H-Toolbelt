@@ -94,6 +94,13 @@
     opacity: 0.85;
   }
 
+  // Same 34px cell and 4px gutter as the align grid below it, so the two icon
+  // surfaces in this tab read as one system.
+  //
+  // These stay as the arrow characters from `shared/anchor` rather than becoming
+  // SVG like the align icons: that module is the single source of truth for the
+  // nine canonical points, and redrawing them here would put the same list in a
+  // second place that could later disagree with it. Only the sizing is shared.
   .htb-anchor-grid {
     display: grid;
     grid-template-columns: repeat(3, 34px);
@@ -107,8 +114,9 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
+    font-family: inherit;
     color: var(--htb-text, #e0e0e0);
     background-color: var(--htb-surface, #2a2a2a);
     border: 1px solid var(--htb-border, #3a3a3a);

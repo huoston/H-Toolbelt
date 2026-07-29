@@ -212,6 +212,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- UI pass: hybrid icon set (icon-only for align/distribute, icon+label tabs, text
+  kept for named controls), tooltips everywhere, and a Help/About header button
+  with author and links.
+
+  The panel had grown wordy, but iconising everything would have traded "too much
+  text" for "too much guessing". The split is by whether the *name* carries the
+  meaning: the six alignments and two distributions are spatial, so they became
+  glyphs; tabs keep icon **and** label, because navigation is where guessing
+  costs you a click to find out where you are; and easing presets, loop types,
+  Bounce/Elastic and Apply/Clear stay as text, since no glyph distinguishes "Ease
+  Out" from "Ease Out Strong". Every button now carries a tooltip, and every
+  icon-only button carries an `aria-label` as well — an icon with neither would
+  be exactly the failure this was meant to avoid.
+
+  Icons are inline SVG on a 16×16 grid with no library behind them, coloured with
+  `currentColor` so they theme from `--htb-*` along with everything else; a
+  baked-in grey would be the one element ignoring a light-theme After Effects.
+  The nine anchor points deliberately stay as the arrow characters from
+  `shared/anchor`: that module is the single source of truth for the canonical
+  points, and redrawing them here would duplicate the list somewhere it could
+  drift. They borrow the icon grid's sizing instead, so the two surfaces match
+  without one copying the other's data.
+
+  The Help/About card shows the version imported from `package.json` — the same
+  file `cep.config.ts` reads when stamping the manifest, so the number cannot
+  drift from the installed extension. Links go through the project's existing
+  `openLinkInBrowser` helper rather than `window.open`, which inside a CEP panel
+  either does nothing or replaces the panel with the page.
+
+  Presentational only: `src/jsx/**` and `src/shared/**` are byte-identical and no
+  `evalTS` call changed — only what the buttons render.
+
 - Merged Anchor Point and Re-pivot into a single Anchor Point tool that
   auto-detects animation: static layers get exact compensation, animated layers
   keep their motion path. Removed the separate Re-pivot section.

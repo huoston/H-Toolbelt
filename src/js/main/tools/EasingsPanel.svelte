@@ -90,9 +90,13 @@
   <div class="htb-easings-side">
     <div class="htb-grid">
       {#each presets as preset (preset.label)}
+        <!-- Kept as text: the preset's name *is* the information, and no glyph
+             distinguishes "Ease Out" from "Ease Out Strong". The tooltip adds
+             the curve numbers, which the name cannot carry. -->
         <button
           class="htb-preset"
           class:htb-active={activeLabel === preset.label}
+          title={`Load ${preset.label} (${preset.bezier.join(", ")}) into the editor`}
           onclick={() => loadPreset(preset)}
         >
           {preset.label}
@@ -101,7 +105,12 @@
     </div>
 
     <div class="htb-actions">
-      <button class="htb-apply" disabled={busy} onclick={apply}>Apply</button>
+      <button
+        class="htb-apply"
+        disabled={busy}
+        title="Apply the current curve to the selected keyframes"
+        onclick={apply}>Apply</button
+      >
     </div>
   </div>
 </div>

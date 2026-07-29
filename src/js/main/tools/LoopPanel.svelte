@@ -139,8 +139,18 @@
   </div>
 
   <div class="htb-loop-actions">
-    <button class="htb-loop-apply" disabled={busy} onclick={apply}>Apply</button>
-    <button class="htb-loop-clear" disabled={busy} onclick={clear}>Clear</button>
+    <button
+      class="htb-loop-apply"
+      disabled={busy}
+      title="Write the loop expression onto the selected properties"
+      onclick={apply}>Apply</button
+    >
+    <button
+      class="htb-loop-clear"
+      disabled={busy}
+      title="Remove expressions from the selected properties"
+      onclick={clear}>Clear</button
+    >
   </div>
 
   <p class="htb-feedback" class:htb-error={isError} aria-live="polite">

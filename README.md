@@ -107,3 +107,6 @@ Distributed under the **GNU General Public License v3.0 or later**
 ## Author
 
 Dr. Huoston Rodrigues — <https://huoston.art/>
+
+The same credit, the project links and the licence are available inside the panel
+from the **?** button in its header.

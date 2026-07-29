@@ -37,6 +37,25 @@
     DISTRIBUTE_AXES,
   } from "../../../shared/align";
   import type { AlignMode, AlignTo, DistributeAxis } from "../../../shared/align";
+  import Icon from "../icons/Icon.svelte";
+  import type { IconName } from "../icons/icons";
+
+  // Mode id -> glyph. The map lives here rather than in `shared/align` because
+  // the host has no use for an icon name, and `shared` is compiled into the
+  // ExtendScript bundle where SVG is meaningless.
+  const ALIGN_ICONS: Record<AlignMode, IconName> = {
+    left: "align-left",
+    hcenter: "align-hcenter",
+    right: "align-right",
+    top: "align-top",
+    vcenter: "align-vcenter",
+    bottom: "align-bottom",
+  };
+
+  const DISTRIBUTE_ICONS: Record<DistributeAxis, IconName> = {
+    x: "distribute-horizontal",
+    y: "distribute-vertical",
+  };
 
   let alignTo: AlignTo = $state(DEFAULT_ALIGN_TO);
 
@@ -96,6 +115,10 @@
     {/each}
   </div>
 
+  <!-- Icon-only: these six are spatial, so the glyph says it faster than the
+       word does. Every one still carries a tooltip and an aria-label — an icon
+       with neither is a guessing game, which is the failure mode this panel is
+       meant to avoid, not trade into. -->
   <div class="htb-align-grid">
     {#each ALIGN_MODES as mode (mode.id)}
       <button
@@ -105,7 +128,7 @@
         aria-label={mode.title}
         onclick={() => align(mode.id)}
       >
-        {mode.label}
+        <Icon name={ALIGN_ICONS[mode.id]} />
       </button>
     {/each}
   </div>
@@ -114,12 +137,13 @@
     <span class="htb-align-label">Distribute</span>
     {#each DISTRIBUTE_AXES as axis (axis.id)}
       <button
-        class="htb-align-mode"
+        class="htb-align-cell htb-align-dist-cell"
         disabled={busy}
         title={axis.title}
+        aria-label={axis.title}
         onclick={() => distribute(axis.id)}
       >
-        {axis.label}
+        <Icon name={DISTRIBUTE_ICONS[axis.id]} />
       </button>
     {/each}
   </div>
@@ -152,11 +176,16 @@
   }
 
   // Six glyph buttons: three per row on a narrow docked panel, six across when
-  // there is room.
+  // there is room. 34px matches the anchor grid's cells, so the two icon
+  // surfaces in this tab read as one system.
   .htb-align-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
     gap: 4px;
+  }
+
+  .htb-align-dist-cell {
+    flex: 1 1 auto;
   }
 
   .htb-align-cell {
@@ -166,7 +195,6 @@
     justify-content: center;
     min-height: 30px;
     padding: 0 4px;
-    font-size: 14px;
     line-height: 1;
     font-family: inherit;
     color: var(--htb-text, #e0e0e0);

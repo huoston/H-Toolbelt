@@ -95,10 +95,13 @@
 <div class="htb-expr">
   <div class="htb-expr-kinds">
     {#each EXPRESSION_KINDS as spec (spec.id)}
+      <!-- Kept as text: "Bounce" and "Elastic" are names, and a glyph for the
+           difference between two decaying oscillations would be a riddle. -->
       <button
         class="htb-expr-kind"
         class:htb-active={kind === spec.id}
         disabled={busy}
+        title={`Apply ${spec.label} to the selected properties`}
         onclick={() => apply(spec.id)}
       >
         {spec.label}
@@ -145,7 +148,12 @@
   </div>
 
   <div class="htb-expr-actions">
-    <button class="htb-expr-clear" disabled={busy} onclick={clear}>Clear</button>
+    <button
+      class="htb-expr-clear"
+      disabled={busy}
+      title="Remove expressions from the selected properties"
+      onclick={clear}>Clear</button
+    >
   </div>
 
   <p class="htb-feedback" class:htb-error={isError} aria-live="polite">

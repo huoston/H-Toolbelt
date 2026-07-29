@@ -18,6 +18,28 @@ See also:
 - [Known limitations](../LIMITATIONS.md) — what the tools deliberately will not do.
 - [Roadmap](../ROADMAP.md) — what is next, and what is only being considered.
 
+## Finding your way around the panel
+
+- **Tabs** carry an icon *and* a label — Motion, Transform, Shapes. On a very
+  narrow docked panel the labels drop out and the icons remain; the tooltip still
+  names each one.
+- **Align and Distribute are icon-only**, because those six alignments are
+  spatial and the glyph reads faster than the word. Hover any of them for a
+  tooltip naming exactly what it does.
+- **Named controls stay as text** — easing presets, loop types, Bounce/Elastic,
+  Apply/Clear. An icon for "Ease Out Strong" would be a riddle, so those keep
+  their names and gain tooltips.
+- **Every button has a tooltip.** Nothing in the panel is a glyph you are
+  expected to guess.
+
+### Help / About
+
+The **?** button in the panel header opens an About card with the version, the
+author, links to [huoston.art](https://huoston.art/) and the
+[GitHub repository](https://github.com/huoston/H-Toolbelt), and the licence.
+Links open in your normal browser rather than inside the panel. Close it with the
+× or with `Esc`.
+
 ## A note on refusals
 
 Three of the five tools rewrite properties that already hold your work, and one
