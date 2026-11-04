@@ -60,7 +60,10 @@ label {
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+}
+
+.button-group > * + * {
+  margin-left: 0.5rem;
 }
 
 .stack-icons {

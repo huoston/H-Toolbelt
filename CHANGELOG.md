@@ -168,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tree before deleting any of them, so no traversal reads a group whose siblings
   were renumbered underneath it. The predicates (`isIdentityTransform`,
   `isArtboardRect`) live in the pure, unit-tested `shared/shape` module.
+  Hidden from the panel for now — see Changed.
 
   **Flatten is deliberately absent, on API grounds.** Collapsing
   identity-transform wrapper groups needs a shape group moved to a new parent, and
@@ -193,6 +194,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   message shown in the panel, since the refusals are written to be diagnostic.
 
 ### Fixed
+
+- Spacing no longer depends on `gap`, which older CEF versions either ignore or do
+  not know by that name. In flexbox it only exists from Chromium 84, so it is absent
+  on both After Effects 16 (CEP 9, Chromium 61) and 17.1–18.3 (CEP 10, Chromium 74).
+  In grid it only exists under that name from Chromium 66; before that the property
+  is `grid-gap`.
+
+  Flex rules now use margins instead: between siblings when the row does not wrap,
+  and half the gutter on each item, cancelled on the container, when it does. Grid
+  rules declare `grid-gap` followed by `gap`. Layout on current versions is
+  unchanged. The rule under the tabs moved to a wrapper element, because a border
+  on a row with negative margins would stick out on both sides.
 
 - Distribute now respects the Align to toggle: Comp spreads layers edge-to-edge
   across the composition; Selection keeps the previous in-selection spacing.
@@ -257,9 +270,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Circ In and Circ Out now use Ceaser's cubic-bezier approximations of Robert
+  Penner's equations: `0.6, 0.04, 0.98, 0.335` and `0.075, 0.82, 0.165, 1`. The
+  previous values had a vertical tangent at one end (`x2 = 1` and `x1 = 0`). No
+  finite speed can express that, so `bezierToTemporalEase` set the speed there to
+  zero, and in a reconstruction of the resulting curve it diverged from the
+  thumbnail by up to 24.5% of the value range. The new points have a finite slope
+  at both ends. The engine is unchanged.
+
+- The panel opens on Easy Ease, After Effects' own default. The preset is found by
+  id, so Linear being first in the grid is only the visual order.
+
+- The Shapes tab is hidden. Shape Layer Magic v1 only deletes empty groups and
+  artboard rectangles, which does not justify a tab. Its panel, shared module,
+  tests and host code all stay in the repository, and it returns when the tab has
+  more to offer.
+
 - Easing library order: Linear first, then Easy Ease, then Sine, Quad, Cubic,
-  Quart, Quint, Expo and Circ. A test pins the exact order. The panel starts on
-  the first preset, so it now opens on Linear instead of Easy Ease.
+  Quart, Quint, Expo and Circ. A test pins the exact order.
 
 - Easing card labels wrap to two lines instead of being cut off with an ellipsis.
   Two lines are always reserved, so cards in a row keep the same height.

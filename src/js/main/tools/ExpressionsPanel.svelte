@@ -15,7 +15,7 @@
   Email: hello@huoston.art
   Version: 0.1.0
   Created: 2026-07-20
-  Modified: 2026-11-04
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -101,6 +101,7 @@
   .htb-ease-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    grid-gap: 5px;
     gap: 5px;
   }
 

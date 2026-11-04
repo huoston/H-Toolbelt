@@ -11,7 +11,7 @@
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-09
- * Modified: 2026-11-04
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -219,18 +219,19 @@ export const EASING_PRESETS: EasingPreset[] = [
     bezier: [0.87, 0, 0.13, 1],
     hint: "Rapid acceleration and deceleration.",
   },
+  // Circ In/Out: Ceaser (Matthew Lein) approximations of Robert Penner's equations.
   {
     id: "circ-in",
     label: "Circ In",
     kind: "bezier",
-    bezier: [0.55, 0, 1, 0.45],
+    bezier: [0.6, 0.04, 0.98, 0.335],
     hint: "Slow start, then an abrupt rise at the end.",
   },
   {
     id: "circ-out",
     label: "Circ Out",
     kind: "bezier",
-    bezier: [0, 0.55, 0.45, 1],
+    bezier: [0.075, 0.82, 0.165, 1],
     hint: "Abrupt start, then a gradual settle.",
   },
   {

@@ -17,7 +17,7 @@
   Email: hello@huoston.art
   Version: 0.1.0
   Created: 2026-07-10
-  Modified: 2026-07-10
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -182,7 +182,6 @@
   .htb-curve {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     align-items: flex-start;
   }
 
@@ -237,13 +236,19 @@
     }
   }
 
+  // Wrapping row: half of each gutter on the items, cancelled on the container.
+  // The top margin is the 8px below the editor minus the row gutter's half.
   .htb-curve-readout {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 12px;
+    margin: 6px -6px -2px;
     font-size: 11px;
     font-family: Menlo, Consolas, "Courier New", monospace;
     color: var(--htb-text-muted, #9a9a9a);
+
+    > span {
+      margin: 2px 6px;
+    }
 
     b {
       color: var(--htb-text, #e0e0e0);

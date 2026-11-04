@@ -19,7 +19,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-28
-  Modified: 2026-07-28
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -159,10 +159,11 @@
 </div>
 
 <style lang="scss">
+  // The rows below set their own top margins, because each of them has something
+  // to add to or take from the 6px between rows.
   .htb-loop {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     min-width: 0;
   }
 
@@ -171,20 +172,30 @@
   .htb-loop-types {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    grid-gap: 6px;
     gap: 6px;
   }
 
+  // Wrapping row: half the gutter on each item, cancelled on the container. The
+  // top margin is the 6px between rows minus that half.
   .htb-loop-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
     align-items: center;
+    margin: 3px -3px -3px;
+  }
+
+  .htb-loop-row > * {
+    margin: 3px;
   }
 
   .htb-loop-dirs {
     display: flex;
-    gap: 6px;
     flex: 1 1 auto;
+  }
+
+  .htb-loop-dirs > * + * {
+    margin-left: 6px;
   }
 
   .htb-loop-type,
@@ -232,9 +243,12 @@
   .htb-loop-field {
     display: flex;
     align-items: center;
-    gap: 4px;
     flex: 0 1 96px;
     min-width: 0;
+  }
+
+  .htb-loop-field > * + * {
+    margin-left: 4px;
   }
 
   .htb-loop-label {
@@ -268,8 +282,11 @@
 
   .htb-loop-actions {
     display: flex;
-    gap: 6px;
-    margin-top: 2px;
+    margin-top: 8px;
+  }
+
+  .htb-loop-actions > * + * {
+    margin-left: 6px;
   }
 
   .htb-loop-apply {
@@ -317,7 +334,7 @@
 
   .htb-feedback {
     min-height: 1.2em;
-    margin: 0;
+    margin: 6px 0 0;
     font-size: 11px;
     color: var(--htb-text-muted, #9a9a9a);
   }

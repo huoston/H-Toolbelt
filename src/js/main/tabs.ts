@@ -9,12 +9,18 @@
  * which reads as a bug rather than as a roadmap. It joins `TABS` and `TabId`
  * together, on the day its first tool ships. See ROADMAP.md.
  *
+ * WHY SHAPES IS NOT LISTED: Shape Layer Magic v1 only deletes empty groups and
+ * artboard rectangles — one small tool does not justify a tab. Its code and
+ * tests stay in the repo (`ShapePanel.svelte`, `src/shared/shape.ts`, the
+ * host's `shape.ts`) and it returns when the tab has more to offer. See
+ * ROADMAP.md.
+ *
  * Author: Dr. Huoston Rodrigues
  * Website: https://huoston.art/
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-28
- * Modified: 2026-07-28
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -22,7 +28,7 @@
 import type { IconName } from "./icons/icons";
 
 /** Add "compositing" here when the tab gains its first tool. */
-export type TabId = "motion" | "transform" | "shapes";
+export type TabId = "motion" | "transform";
 
 export interface TabSpec {
   id: TabId;
@@ -45,12 +51,6 @@ export const TABS: TabSpec[] = [
     label: "Transform",
     title: "Anchor point, align and distribute.",
     icon: "tab-transform",
-  },
-  {
-    id: "shapes",
-    label: "Shapes",
-    title: "Shape layer cleanup.",
-    icon: "tab-shapes",
   },
 ];
 

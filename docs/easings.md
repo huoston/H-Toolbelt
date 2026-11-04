@@ -54,8 +54,8 @@ stays a separate button, so browsing the library never touches your keyframes.
 | Expo In      | `0.7, 0, 0.84, 0`      | Slow start, then rapid acceleration.             |
 | Expo Out     | `0.16, 1, 0.3, 1`      | Rapid deceleration to a slow end.                |
 | Expo In-Out  | `0.87, 0, 0.13, 1`     | Rapid acceleration and deceleration.             |
-| Circ In      | `0.55, 0, 1, 0.45`     | Slow start, then an abrupt rise at the end.      |
-| Circ Out     | `0, 0.55, 0.45, 1`     | Abrupt start, then a gradual settle.             |
+| Circ In      | `0.6, 0.04, 0.98, 0.335` | Slow start, then an abrupt rise at the end.      |
+| Circ Out     | `0.075, 0.82, 0.165, 1` | Abrupt start, then a gradual settle.             |
 | Circ In-Out  | `0.85, 0, 0.15, 1`     | Abrupt change of speed through the middle.       |
 
 **Linear** comes first, then **Easy Ease**. The families after them are ordered
@@ -63,7 +63,7 @@ by how sharply they bend: **Sine** barely, then **Quad**, **Cubic**, **Quart**,
 **Quint**, and **Expo** hardest, with **Circ** last. Within each, **In** eases the
 start, **Out** eases the end, and **In-Out** does both.
 
-The panel opens on **Linear**, the first card.
+The panel opens on **Easy Ease**, After Effects' own default; Linear is only first in the grid.
 
 > **Why there is no Back, Elastic or Bounce here.** Those overshoot — they leave
 > the 0–1 box and come back. A keyframe's influence and speed cannot describe

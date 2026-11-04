@@ -15,7 +15,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-09
-  Modified: 2026-07-28
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -37,11 +37,12 @@
   const presets = EASING_PRESETS;
 
   // The live curve shared with the editor. Presets load into it; drags flow back
-  // through the binding; Apply reads it. Starts on the first preset.
+  // through the binding; Apply reads it. Starts on Easy Ease, found by id because
+  // grid position says nothing about which curve the panel should open on.
   //
   // This state is why tab panels stay mounted: a hand-tuned curve must survive a
   // trip to another tab, and an {#if} would silently reset it to the preset.
-  let bezier: Bezier = $state([...presets[0].bezier]);
+  let bezier: Bezier = $state([...presets.find((p) => p.id === "easy-ease")!.bezier]);
 
   let feedback: string = $state("");
   let isError: boolean = $state(false);
@@ -101,7 +102,7 @@
 </div>
 
 <!-- The library. Each card shows its own curve, so the shape is browsable
-     without reading fourteen names; the name and its description are still
+     without reading every name; the name and its description are still
      there, on the card and in the tooltip. -->
 <div class="htb-ease-grid">
   {#each presets as preset (preset.id)}
@@ -119,11 +120,16 @@
 </p>
 
 <style lang="scss">
+  // Wrapping row: half the gutter on each item, cancelled on the container.
   .htb-easings {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
     align-items: flex-start;
+    margin: -6px;
+  }
+
+  .htb-easings > :global(*) {
+    margin: 6px;
   }
 
   .htb-easings-side {
@@ -131,7 +137,10 @@
     min-width: 150px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+  }
+
+  .htb-easings-side > :global(* + *) {
+    margin-top: 8px;
   }
 
   // Cards are ~64px wide at their narrowest, so this lands 2-3 per row in a
@@ -139,12 +148,13 @@
   .htb-ease-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    grid-gap: 5px;
     gap: 5px;
     margin-top: 10px;
   }
 
   .htb-actions {
-    // Spacing comes from the side column's flex gap.
+    // The first child of the side column, so nothing sits above it.
     margin-top: 0;
   }
 

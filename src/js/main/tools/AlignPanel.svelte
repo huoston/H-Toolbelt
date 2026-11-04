@@ -24,7 +24,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-29
-  Modified: 2026-11-04
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -157,16 +157,30 @@
   .htb-align {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     min-width: 0;
   }
 
+  .htb-align > * + * {
+    margin-top: 6px;
+  }
+
+  // Wrapping rows: half the gutter on each item, cancelled on the container.
   .htb-align-to,
   .htb-align-dist {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    margin: -3px;
+  }
+
+  .htb-align-to > *,
+  .htb-align-dist > * {
+    margin: 3px;
+  }
+
+  // The 6px between the panel's rows, minus the half its own items add back.
+  .htb-align-dist {
+    margin-top: 3px;
   }
 
   .htb-align-label {
@@ -177,7 +191,7 @@
 
   // A full-width item in a wrapping row, so the toggle starts on the next line.
   .htb-align-to-label {
-    flex: 0 0 100%;
+    flex: 0 0 calc(100% - 6px);
   }
 
   // Six glyph buttons: three per row on a narrow docked panel, six across when
@@ -186,6 +200,7 @@
   .htb-align-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+    grid-gap: 4px;
     gap: 4px;
   }
 
@@ -258,7 +273,7 @@
 
   .htb-feedback {
     min-height: 1.2em;
-    margin: 0;
+    margin: 6px 0 0;
     font-size: 11px;
     color: var(--htb-text-muted, #9a9a9a);
   }

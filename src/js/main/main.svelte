@@ -1,7 +1,7 @@
 <!--
   H-Toolbelt — main panel.
 
-  A tab shell over five tools. This component owns the tab state and the layout;
+  A tab shell over six tools. This component owns the tab state and the layout;
   every tool lives in its own self-contained component under ./tools/ and is
   reached only through the panel it sits in.
 
@@ -26,7 +26,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-09
-  Modified: 2026-11-04
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -41,7 +41,6 @@
   import LoopPanel from "./tools/LoopPanel.svelte";
   import AnchorPanel from "./tools/AnchorPanel.svelte";
   import AlignPanel from "./tools/AlignPanel.svelte";
-  import ShapePanel from "./tools/ShapePanel.svelte";
   import About from "./About.svelte";
   import Icon from "./icons/Icon.svelte";
   import { initAeTheme } from "./theme";
@@ -77,7 +76,7 @@
 
   <Tabs bind:active={activeTab} />
 
-  <!-- All three panels are rendered on boot. `htb-panel-hidden` sets
+  <!-- Every panel is rendered on boot. `htb-panel-hidden` sets
        `display: none`; nothing here unmounts. -->
   <div class="htb-panels">
     <div
@@ -129,20 +128,6 @@
         </section>
       </div>
     </div>
-
-    <div
-      class="htb-panel"
-      class:htb-panel-hidden={activeTab !== "shapes"}
-      id={tabPanelId("shapes")}
-      role="tabpanel"
-      aria-labelledby={tabButtonId("shapes")}
-      aria-hidden={activeTab !== "shapes"}
-    >
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Shape Layer Magic</h2>
-        <ShapePanel />
-      </section>
-    </div>
   </div>
 
   <!-- Overlays the panel; the tool panels behind it stay mounted. -->
@@ -163,8 +148,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
     margin-bottom: 10px;
+  }
+
+  .htb-head > * + * {
+    margin-left: 8px;
   }
 
   .htb-title {

@@ -27,7 +27,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-29
-  Modified: 2026-11-04
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -147,7 +147,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
     padding: 6px 4px;
     font-family: inherit;
     color: var(--htb-text, #e0e0e0);
@@ -159,6 +158,10 @@
     transition:
       background-color 0.12s ease,
       border-color 0.12s ease;
+  }
+
+  .htb-ease-card > * + * {
+    margin-top: 4px;
   }
 
   .htb-ease-card:hover:not(:disabled) {

@@ -16,7 +16,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-28
-  Modified: 2026-07-28
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -55,38 +55,47 @@
   };
 </script>
 
-<div class="htb-tabs" role="tablist" aria-label="H-Toolbelt tools">
-  {#each tabs as tab, i (tab.id)}
-    <button
-      class="htb-tab"
-      class:htb-tab-active={active === tab.id}
-      id={tabButtonId(tab.id)}
-      role="tab"
-      type="button"
-      title={tab.title}
-      aria-selected={active === tab.id}
-      aria-controls={tabPanelId(tab.id)}
-      tabindex={active === tab.id ? 0 : -1}
-      onclick={() => (active = tab.id)}
-      onkeydown={(e) => onKeydown(e, i)}
-    >
-      <!-- Icon *and* label: navigation is the one place where guessing costs
-           the user a click to find out where they are. -->
-      <Icon name={tab.icon} size={14} />
-      <span class="htb-tab-label">{tab.label}</span>
-    </button>
-  {/each}
+<div class="htb-tabs-rule">
+  <div class="htb-tabs" role="tablist" aria-label="H-Toolbelt tools">
+    {#each tabs as tab, i (tab.id)}
+      <button
+        class="htb-tab"
+        class:htb-tab-active={active === tab.id}
+        id={tabButtonId(tab.id)}
+        role="tab"
+        type="button"
+        title={tab.title}
+        aria-selected={active === tab.id}
+        aria-controls={tabPanelId(tab.id)}
+        tabindex={active === tab.id ? 0 : -1}
+        onclick={() => (active = tab.id)}
+        onkeydown={(e) => onKeydown(e, i)}
+      >
+        <!-- Icon *and* label: navigation is the one place where guessing costs
+             the user a click to find out where they are. -->
+        <Icon name={tab.icon} size={14} />
+        <span class="htb-tab-label">{tab.label}</span>
+      </button>
+    {/each}
+  </div>
 </div>
 
 <style lang="scss">
   // Tabs share the row and wrap to a second line on a narrow docked panel
   // rather than overflowing or shrinking their labels to nothing.
+  //
+  // The rule under the tabs sits on a wrapper because the row itself has negative
+  // margins, half the gutter cancelled against the items, and a border on it would
+  // stick out by that much on both sides.
+  .htb-tabs-rule {
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--htb-border, #3a3a3a);
+  }
+
   .htb-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    margin-bottom: 12px;
-    border-bottom: 1px solid var(--htb-border, #3a3a3a);
+    margin: -1px;
   }
 
   .htb-tab {
@@ -94,7 +103,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
     flex: 1 1 auto;
     min-width: 72px;
     padding: 7px 10px;
@@ -109,7 +117,9 @@
     // Reserves the active underline on every tab, so selecting one does not
     // shift the row by a pixel.
     border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    // Half the row's gutter on three sides. Below it, that half is what is left of
+    // the gutter after the underline's 1px overlap with the rule.
+    margin: 1px 1px 0;
     cursor: pointer;
     user-select: none;
     transition:
@@ -117,8 +127,13 @@
       border-color 0.12s ease;
   }
 
+  // The icon comes from another component, hence :global.
+  .htb-tab > :global(* + *) {
+    margin-left: 5px;
+  }
+
   // Drops out first on a narrow docked panel: the icon plus the tooltip still
-  // identify the tab, and three truncated words identify nothing.
+  // identify the tab, and truncated words identify nothing.
   .htb-tab-label {
     white-space: nowrap;
   }

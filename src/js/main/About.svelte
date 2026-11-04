@@ -19,7 +19,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-29
-  Modified: 2026-07-29
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -149,7 +149,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+  }
+
+  .htb-about-head > * + * {
+    margin-left: 8px;
   }
 
   .htb-about-title {
@@ -190,11 +193,12 @@
     font-weight: 600;
   }
 
+  // Wrapping row: half the gutter on each item, cancelled on the container. The
+  // top margin is the 12px above the row minus that half.
   .htb-about-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
+    margin: 9px -3px -3px;
   }
 
   // Buttons, not anchors: these do not navigate the panel, they hand a URL to
@@ -202,6 +206,7 @@
   .htb-about-link {
     appearance: none;
     flex: 1 1 auto;
+    margin: 3px;
     padding: 6px 10px;
     font-size: 11px;
     font-weight: 500;

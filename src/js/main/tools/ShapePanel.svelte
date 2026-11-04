@@ -17,7 +17,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-28
-  Modified: 2026-07-28
+  Modified: 2026-11-05
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -100,21 +100,22 @@
   .htb-shape {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     min-width: 0;
   }
 
-  // Buttons share a row and wrap to a stack on a narrow docked panel.
+  // Buttons share a row and wrap to a stack on a narrow docked panel. Half the
+  // gutter on each button, cancelled on the container.
   .htb-shape-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    margin: -3px;
   }
 
   .htb-shape-btn {
     appearance: none;
     flex: 1 1 96px;
     min-width: 0;
+    margin: 3px;
     padding: 7px 8px;
     font-size: 12px;
     font-weight: 500;
@@ -151,7 +152,7 @@
   }
 
   .htb-shape-note {
-    margin: 0;
+    margin: 6px 0 0;
     font-size: 10px;
     line-height: 1.35;
     color: var(--htb-text-muted, #9a9a9a);
@@ -160,7 +161,7 @@
 
   .htb-feedback {
     min-height: 1.2em;
-    margin: 0;
+    margin: 6px 0 0;
     font-size: 11px;
     color: var(--htb-text-muted, #9a9a9a);
   }

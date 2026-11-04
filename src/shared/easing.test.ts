@@ -6,7 +6,7 @@
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-09
- * Modified: 2026-11-04
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -173,6 +173,11 @@ describe("the easing library", () => {
         expect(Number.isFinite(side.speed)).toBe(true);
       }
     }
+  });
+
+  it("keeps the preset the panel opens on, which it finds by id", () => {
+    const easyEase = EASING_PRESETS.find((p) => p.id === "easy-ease");
+    expect(easyEase?.bezier).toEqual([0.333, 0, 0.667, 1]);
   });
 
   it("keeps Linear linear", () => {
