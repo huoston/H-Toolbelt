@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Easings: nine new bezier presets (Quart, Quint and Circ, each in/out/in-out),
+  taking the library from 14 to 23 curves. All nine stay inside the unit square
+  and run through the keyframe engine, which is untouched.
+
+- Dynamics: six baked expression presets (Bounce and Elastic, each Soft, Medium
+  and Hard) in the card grid, in `shared/dynamics`. Clicking a card applies it
+  immediately through the existing `applyExpression`; the host and the generated
+  text are unchanged. Each card draws a linear rise followed by the preset's
+  decaying oscillation, from `oscillation`, the numeric twin of the generated
+  expression's factor. A test pins the two together through the expression text.
+
+  The Medium presets equal `EXPRESSION_DEFAULTS`, which v0.1.0 applied by default,
+  and a test holds them there as the regression control.
+
 - Easings: card grid with curve thumbnails and hover hints; full bezier library
   (Easy Ease, Linear, Sine, Quad, Cubic, Expo — in/out/in-out), 14 curves.
 
@@ -242,6 +256,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as one investigation serving both tools.
 
 ### Changed
+
+- Easing library order: Linear first, then Easy Ease, then Sine, Quad, Cubic,
+  Quart, Quint, Expo and Circ. A test pins the exact order. The panel starts on
+  the first preset, so it now opens on Linear instead of Easy Ease.
+
+- Easing card labels wrap to two lines instead of being cut off with an ellipsis.
+  Two lines are always reserved, so cards in a row keep the same height.
+
+- The Sequencing section is now titled Layer Sequencer. Only the heading changed.
+
+- The Expressions section is now Dynamics and sits directly under Easings. The
+  free Amp/Freq/Decay fields and the Bounce/Elastic buttons are gone, replaced by
+  the six presets. The values can still be edited in the generated text, through
+  the `amp` / `freq` / `decay` variables. Clear is unchanged.
+
+- Transform tab in two columns, Anchor Point (190px) beside Align (at least
+  290px), with Align dropping underneath when both do not fit. The divider between
+  the two sections is gone. The Anchor Point hint is shorter, with the longer text
+  moved to its tooltip, and `Align to` sits on its own line above the toggle.
+  Anchor, align and distribute logic are untouched.
 
 - UI pass: hybrid icon set (icon-only for align/distribute, icon+label tabs, text
   kept for named controls), tooltips everywhere, and a Help/About header button

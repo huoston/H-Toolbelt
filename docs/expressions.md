@@ -3,7 +3,7 @@
 ## What it does
 
 Writes a bounce or elastic expression onto the properties you have selected, in
-one click. Both effects measure the property's velocity going into its last
+one click, from the **Dynamics** section of the Motion tab. Both effects measure the property's velocity going into its last
 keyframe and add a decaying oscillation scaled by it, so the overshoot inherits
 the speed of your animation instead of being a fixed nudge. **Clear** removes
 expressions again.
@@ -15,27 +15,33 @@ are added to your layer.
 
 1. Select one or more **animated properties** in the timeline (click the property
    name, e.g. `Position`, not the layer).
-2. Adjust **Amp**, **Freq** and **Decay** if you want.
-3. Click **Bounce** or **Elastic**. It applies immediately.
+2. Click one of the six cards. It applies immediately.
 
 To remove expressions, select the properties and click **Clear**.
 
 ## Options
 
-Each effect keeps its own parameter set, so switching between Bounce and Elastic
-restores that effect's values rather than carrying the other one's tuning over.
-The highlighted button shows which effect's parameters the fields are editing.
+Six cards, three intensities of each effect. Each card draws its own curve over a
+dashed line at the rest value, and hovering it shows what the motion does.
+Clicking is the action, so no card stays highlighted.
 
-| Control    | Bounce default | Elastic default | What it does                                                        |
-| ---------- | -------------- | --------------- | -------------------------------------------------------------------- |
-| **Amp**    | `0.1`          | `0.12`          | Strength of the overshoot, as a fraction of the sampled velocity.    |
-| **Freq**   | `2.5`          | `2`             | Oscillations per second.                                             |
-| **Decay**  | `6`            | `4`             | How fast the oscillation dies out. Higher settles sooner.            |
+| Preset         | Kind    | Amplitude | Frequency | Decay |
+| -------------- | ------- | --------- | --------- | ----- |
+| Bounce Soft    | bounce  | `0.05`    | `2`       | `8`   |
+| Bounce Medium  | bounce  | `0.1`     | `2.5`     | `6`   |
+| Bounce Hard    | bounce  | `0.18`    | `3`       | `4`   |
+| Elastic Soft   | elastic | `0.05`    | `1.5`     | `7`   |
+| Elastic Medium | elastic | `0.12`    | `2`       | `4`   |
+| Elastic Hard   | elastic | `0.18`    | `2.5`     | `3.5` |
+
+Amplitude is the strength of the overshoot, as a fraction of the sampled velocity.
+Frequency is oscillations per second. Decay is how fast the oscillation dies out;
+higher settles sooner. The two Medium presets are the values v0.1.0 applied by
+default.
 
 **Bounce** rectifies the oscillation so every lobe pushes the same way — an
 object hitting a floor never passes through it. **Elastic** leaves it signed, so
-it overshoots to both sides. Bounce defaults to a higher decay because a bounce
-that lingers reads as a wobble rather than an impact.
+it overshoots to both sides.
 
 ## When it refuses (and why)
 
@@ -78,8 +84,9 @@ For **Clear**:
 - **The effect starts after the last keyframe reached.** Before the first
   keyframe the expression falls through to the property's plain value, so the
   property behaves normally until the animation actually starts.
-- **Editing the parameters does not update already-applied expressions.** The
-  values are baked into the text at the moment you click. To retune, Clear and
-  re-apply — or edit the `amp` / `freq` / `decay` variables directly at the top
+- **Clicking another card does not update already-applied expressions.** The
+  values are baked into the text at the moment you click, and a property that
+  already has an expression is refused. To retune, Clear and apply another card —
+  or edit the `amp` / `freq` / `decay` variables directly at the top
   of the expression, which is plain readable code.
 - The whole operation is a single undo step.

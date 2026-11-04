@@ -23,7 +23,7 @@
   Email: hello@huoston.art
   Version: 0.1.0
   Created: 2026-07-20
-  Modified: 2026-07-20
+  Modified: 2026-11-04
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -54,8 +54,11 @@
 </script>
 
 <div class="htb-anchor">
-  <p class="htb-anchor-hint">
-    Move the layer anchor. Animated layers keep their motion path automatically.
+  <p
+    class="htb-anchor-hint"
+    title="Move the layer anchor. Animated layers keep their motion path automatically."
+  >
+    Move the layer anchor. Motion paths are preserved.
   </p>
 
   <div class="htb-anchor-grid">

@@ -120,9 +120,11 @@ Behaviour worth knowing:
   `// H-Toolbelt` first line if you want to check before clearing.
 - **Numeric properties only** — 1D, 2D and 3D values. Colours, masks, shape paths
   and text documents are refused.
-- **Parameters are baked in at apply time.** Changing Amp/Freq/Decay afterwards
-  does not update expressions already applied; Clear and re-apply, or edit the
-  `amp` / `freq` / `decay` variables at the top of the generated expression.
+- **Parameters are baked in at apply time.** The panel offers six baked presets
+  rather than editable values, and each card writes its values into the text when
+  clicked. Expressions already applied do not update; Clear and apply another
+  card, or edit the `amp` / `freq` / `decay` variables at the top of the generated
+  expression.
 - **No Expression Controls are created.** The layer stays clean; the trade-off is
   that retuning means re-applying or editing the text.
 - **Generated text is ES3** so it runs under both the JavaScript and Legacy

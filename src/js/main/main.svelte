@@ -7,9 +7,8 @@
 
   WHY EVERY PANEL STAYS MOUNTED: tab switching toggles CSS `display`, never
   `{#if}`. Two reasons, and neither is cosmetic. First, state: the curve editor's
-  hand-tuned bezier, the per-effect expression parameters and the sequencing
-  order all live in component state, and an {#if} would quietly reset them every
-  time the user looked at another tab. Second, mounting: this panel has already
+  hand-tuned bezier and the sequencing order both live in component state, and
+  an {#if} would quietly reset them every time the user looked at another tab. Second, mounting: this panel has already
   been broken twice by mount-time failures in CEP's CEF (P02a, P02b), and
   mounting each tool once on boot means those failures surface immediately and
   identically for everyone, instead of hiding behind a tab nobody clicked yet.
@@ -27,7 +26,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-09
-  Modified: 2026-07-28
+  Modified: 2026-11-04
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -95,13 +94,13 @@
       </section>
 
       <section class="htb-tool">
-        <h2 class="htb-tool-name">Sequencing</h2>
-        <SequencePanel />
+        <h2 class="htb-tool-name">Dynamics</h2>
+        <ExpressionsPanel />
       </section>
 
       <section class="htb-tool">
-        <h2 class="htb-tool-name">Expressions</h2>
-        <ExpressionsPanel />
+        <h2 class="htb-tool-name">Layer Sequencer</h2>
+        <SequencePanel />
       </section>
 
       <section class="htb-tool">
@@ -118,15 +117,17 @@
       aria-labelledby={tabButtonId("transform")}
       aria-hidden={activeTab !== "transform"}
     >
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Anchor Point</h2>
-        <AnchorPanel />
-      </section>
+      <div class="htb-transform-cols">
+        <section class="htb-tool htb-transform-anchor">
+          <h2 class="htb-tool-name">Anchor Point</h2>
+          <AnchorPanel />
+        </section>
 
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Align</h2>
-        <AlignPanel />
-      </section>
+        <section class="htb-tool htb-transform-align">
+          <h2 class="htb-tool-name">Align</h2>
+          <AlignPanel />
+        </section>
+      </div>
     </div>
 
     <div
@@ -212,6 +213,43 @@
     margin-top: 14px;
     padding-top: 12px;
     border-top: 1px solid var(--htb-border, #3a3a3a);
+  }
+
+  // Two columns in the Transform tab, with Align dropping underneath when both
+  // do not fit. CSS cannot tell whether a flex row has wrapped, so the spacing is
+  // set on the items and cancelled on the container: each item carries both
+  // margins, and only the ones between items end up visible. Flexbox `gap` would
+  // say this directly, but the CEF in CC 2019 predates it.
+  .htb-transform-cols {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin: -12px 0 0 -16px;
+  }
+
+  .htb-transform-anchor {
+    flex: 0 0 190px;
+    margin: 12px 0 0 16px;
+  }
+
+  .htb-transform-align {
+    flex: 1 1 290px;
+    min-width: 290px;
+  }
+
+  // Replaces the stacked-tools rule above, including its divider.
+  .htb-transform-cols > .htb-tool + .htb-tool {
+    margin: 12px 0 0 16px;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  // Below this the 290px minimum no longer fits even on its own row, and it
+  // would push Align out of the panel.
+  @media (max-width: 340px) {
+    .htb-transform-align {
+      min-width: 0;
+    }
   }
 
   .htb-tool-name {

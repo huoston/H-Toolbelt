@@ -6,7 +6,7 @@
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-09
- * Modified: 2026-07-09
+ * Modified: 2026-11-04
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -86,7 +86,35 @@ describe("bezierToTemporalEase", () => {
 
 describe("the easing library", () => {
   it("exposes the full bezier set", () => {
-    expect(EASING_PRESETS).toHaveLength(14);
+    expect(EASING_PRESETS).toHaveLength(23);
+  });
+
+  it("renders in the exact library order, Linear first", () => {
+    expect(EASING_PRESETS.map((p) => p.label)).toEqual([
+      "Linear",
+      "Easy Ease",
+      "Sine In",
+      "Sine Out",
+      "Sine In-Out",
+      "Quad In",
+      "Quad Out",
+      "Quad In-Out",
+      "Cubic In",
+      "Cubic Out",
+      "Cubic In-Out",
+      "Quart In",
+      "Quart Out",
+      "Quart In-Out",
+      "Quint In",
+      "Quint Out",
+      "Quint In-Out",
+      "Expo In",
+      "Expo Out",
+      "Expo In-Out",
+      "Circ In",
+      "Circ Out",
+      "Circ In-Out",
+    ]);
   });
 
   it("gives every preset a unique id and label", () => {

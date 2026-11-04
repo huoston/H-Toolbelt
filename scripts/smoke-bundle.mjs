@@ -33,7 +33,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-10
- * Modified: 2026-07-20
+ * Modified: 2026-11-04
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -55,7 +55,7 @@ const UI_SRC_DIRS = [join("src", "js", "main")];
 // names-vanished one.
 const REQUIRED_TOKENS = [
   // shared/easing — EASING_PRESETS. One label per family plus the endpoints of
-  // the range, rather than all fourteen: enough that an emptied or truncated
+  // the range, rather than all twenty-three: enough that an emptied or truncated
   // library fails here, without the list needing an edit every time a preset is
   // renamed.
   '"Easy Ease"',
@@ -64,9 +64,18 @@ const REQUIRED_TOKENS = [
   '"Quad Out"',
   '"Cubic In-Out"',
   '"Expo Out"',
+  '"Quart Out"',
+  '"Quint In"',
+  '"Circ In-Out"',
   // Control points, because a label surviving does not prove its curve did.
   "0.333",
   "0.87",
+  "0.83",
+  // shared/dynamics — DYNAMICS_PRESETS, one label per kind.
+  '"Bounce Medium"',
+  '"Elastic Hard"',
+  // main.svelte — the section heading, which only exists as template text.
+  "Layer Sequencer",
   // shared/loop — LOOP_TYPES / LOOP_DIRECTIONS ids, which are also the strings
   // baked into the generated expression text.
   '"pingpong"',

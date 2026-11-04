@@ -11,7 +11,7 @@
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-09
- * Modified: 2026-07-09
+ * Modified: 2026-11-04
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -69,9 +69,9 @@ export const INFLUENCE_MAX = 100;
  * The bezier easing library. Values are exact and must not drift.
  *
  * The families are the standard cubic-bezier approximations of the classic
- * easing functions, in the order a motion designer reaches for them: the AE
- * default first, then no easing at all, then the families ordered by how sharply
- * they bend — Sine barely, Expo hard.
+ * easing functions, in the order a motion designer reaches for them: no easing
+ * at all first, then the AE default, then the families ordered by how sharply
+ * they bend — Sine barely, Expo hard — and Circ last.
  *
  * Every curve here is monotonic within [0,1], which is precisely why they can
  * all run through the keyframe engine. Overshoot easings are not in this list
@@ -80,18 +80,18 @@ export const INFLUENCE_MAX = 100;
  */
 export const EASING_PRESETS: EasingPreset[] = [
   {
-    id: "easy-ease",
-    label: "Easy Ease",
-    kind: "bezier",
-    bezier: [0.333, 0, 0.667, 1],
-    hint: "Gentle acceleration then deceleration.",
-  },
-  {
     id: "linear",
     label: "Linear",
     kind: "bezier",
     bezier: [0, 0, 1, 1],
     hint: "Constant speed from start to end.",
+  },
+  {
+    id: "easy-ease",
+    label: "Easy Ease",
+    kind: "bezier",
+    bezier: [0.333, 0, 0.667, 1],
+    hint: "Gentle acceleration then deceleration.",
   },
   {
     id: "sine-in",
@@ -157,6 +157,48 @@ export const EASING_PRESETS: EasingPreset[] = [
     hint: "Slow start and end, fast in the middle.",
   },
   {
+    id: "quart-in",
+    label: "Quart In",
+    kind: "bezier",
+    bezier: [0.5, 0, 0.75, 0],
+    hint: "Long slow start, then strong acceleration.",
+  },
+  {
+    id: "quart-out",
+    label: "Quart Out",
+    kind: "bezier",
+    bezier: [0.25, 1, 0.5, 1],
+    hint: "Strong start, then a long deceleration.",
+  },
+  {
+    id: "quart-in-out",
+    label: "Quart In-Out",
+    kind: "bezier",
+    bezier: [0.76, 0, 0.24, 1],
+    hint: "Strong acceleration, then strong deceleration.",
+  },
+  {
+    id: "quint-in",
+    label: "Quint In",
+    kind: "bezier",
+    bezier: [0.64, 0, 0.78, 0],
+    hint: "Very slow start, then sharp acceleration.",
+  },
+  {
+    id: "quint-out",
+    label: "Quint Out",
+    kind: "bezier",
+    bezier: [0.22, 1, 0.36, 1],
+    hint: "Very fast start, then a long soft landing.",
+  },
+  {
+    id: "quint-in-out",
+    label: "Quint In-Out",
+    kind: "bezier",
+    bezier: [0.83, 0, 0.17, 1],
+    hint: "Long ease at both ends, very fast in the middle.",
+  },
+  {
     id: "expo-in",
     label: "Expo In",
     kind: "bezier",
@@ -176,6 +218,27 @@ export const EASING_PRESETS: EasingPreset[] = [
     kind: "bezier",
     bezier: [0.87, 0, 0.13, 1],
     hint: "Rapid acceleration and deceleration.",
+  },
+  {
+    id: "circ-in",
+    label: "Circ In",
+    kind: "bezier",
+    bezier: [0.55, 0, 1, 0.45],
+    hint: "Slow start, then an abrupt rise at the end.",
+  },
+  {
+    id: "circ-out",
+    label: "Circ Out",
+    kind: "bezier",
+    bezier: [0, 0.55, 0.45, 1],
+    hint: "Abrupt start, then a gradual settle.",
+  },
+  {
+    id: "circ-in-out",
+    label: "Circ In-Out",
+    kind: "bezier",
+    bezier: [0.85, 0, 0.15, 1],
+    hint: "Abrupt change of speed through the middle.",
   },
 ];
 

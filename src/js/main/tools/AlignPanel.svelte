@@ -24,7 +24,7 @@
   Email: hello@huoston.art
   Version: 0.2.0
   Created: 2026-07-29
-  Modified: 2026-07-29
+  Modified: 2026-11-04
   License: GPL-3.0-or-later
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -100,7 +100,7 @@
 
 <div class="htb-align">
   <div class="htb-align-to" role="group" aria-label="Align to">
-    <span class="htb-align-label">Align to</span>
+    <span class="htb-align-label htb-align-to-label">Align to</span>
     {#each ALIGN_TARGETS as target (target.id)}
       <button
         class="htb-align-mode"
@@ -173,6 +173,11 @@
     flex: 0 0 auto;
     font-size: 11px;
     color: var(--htb-text-muted, #9a9a9a);
+  }
+
+  // A full-width item in a wrapping row, so the toggle starts on the next line.
+  .htb-align-to-label {
+    flex: 0 0 100%;
   }
 
   // Six glyph buttons: three per row on a narrow docked panel, six across when
