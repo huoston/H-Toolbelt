@@ -38,7 +38,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-29
- * Modified: 2026-07-29
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -387,7 +387,7 @@ const measureLayer = (
   if (!rect) {
     return isBoundedLayerType(mn)
       ? "No bounding box available " + name
-      : "No bounding box available for unrecognised layer type " + name;
+      : "No bounding box available for unrecognized layer type " + name;
   }
 
   const anchorVec = vecAtTime(anchorProp, time);

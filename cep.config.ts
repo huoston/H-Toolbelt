@@ -41,7 +41,9 @@ const config: CEP_Config = {
   zxp: {
     country: "US",
     province: "CA",
-    org: "Company",
+    // The plugin pastes this into the signing command unquoted, so a value with a
+    // space has to carry its own quotes. `shared/shared` strips them for display.
+    org: '"Huoston Rodrigues"',
     password: "password",
     tsa: [
       "http://timestamp.digicert.com/", // Windows Only

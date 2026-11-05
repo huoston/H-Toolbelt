@@ -60,7 +60,7 @@ export const HELP: {
       "Click a card. It applies immediately. Soft, Medium and Hard set the strength.",
     ],
     notes: [
-      "If every keyframe is reached with an eased arrival (Easy Ease, any Out or In-Out curve), there is no speed left to bounce with and the property is skipped with a message. If only some are, it applies and names the ones that will not bounce. Very short segments (under about 9 frames) still keep a little speed, so they bounce weakly instead of being skipped.",
+      "If every keyframe is reached with an eased arrival (Easy Ease, any Out or In-Out curve), there is no speed left to bounce with and the property is skipped with a message. If only some are, it applies and says how many arrivals will not bounce. Very short segments (for Easy Ease, under about 9 frames) still keep a little speed, so they bounce weakly instead of being skipped.",
       "The bounce happens after the keyframe: play or scrub past it to see it.",
       "One expression per property: Clear before switching between Dynamics and Loops.",
       "Clear removes every expression on the selected properties, including ones you wrote yourself.",

@@ -21,7 +21,7 @@
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-20
- * Modified: 2026-07-20
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -210,7 +210,7 @@ const probeRefusal = (probe: RectProbe, mn: string): string | null => {
   if (probe.empty) return "Empty layer (zero-size bounds)";
   return isBoundedLayerType(mn)
     ? "No bounding box available"
-    : "No bounding box available for unrecognised layer type";
+    : "No bounding box available for unrecognized layer type";
 };
 
 /** Read a property by match name, or null when absent. */

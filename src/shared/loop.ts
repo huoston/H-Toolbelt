@@ -27,7 +27,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-28
- * Modified: 2026-07-28
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -68,7 +68,7 @@ export const LOOP_TYPES: LoopTypeSpec[] = [
   {
     id: "continue",
     label: "Continue",
-    title: "Carry on at the velocity of the last keyframe. Ignores the count.",
+    title: "Carry on at the speed of the last keyframe (Out) or the first (In). Ignores the count.",
   },
 ];
 
