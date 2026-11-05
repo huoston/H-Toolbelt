@@ -33,7 +33,7 @@ The panel is organized into tabs, so this document is too.
 - **One-Click Expression Effects** — bounce and elastic in ES3 text compatible
   with both expression engines, plus Clear.
 
-### Built — lands in v0.2.0
+### Shipped — v0.2.0
 
 - **Loop Creator**, shown as **Loops**. Loop expressions on the selected properties:
   **Cycle**, **Ping-Pong**, **Offset** and **Continue**, in either direction, with an
@@ -76,7 +76,7 @@ The panel is organized into tabs, so this document is too.
   compensated through the transform matrix, so nothing moves on screen at any
   scale or rotation.
 
-### Changed — lands in v0.2.0
+### Shipped — v0.2.0
 
 - **Anchor Point now handles animated layers**, in the same grid. It detects
   animation itself and branches internally, so the user never has to know in
@@ -131,7 +131,7 @@ Deliberately out of v1, in rough order of usefulness:
 
 ## Shapes
 
-### Built, hidden — in the code for v0.2.0
+### Shipped hidden — in the code since v0.2.0
 
 The Shapes tab is hidden, because one cleanup tool does not justify a tab. The code
 and its page stay in the repository, and the tool returns when the tab has more to
