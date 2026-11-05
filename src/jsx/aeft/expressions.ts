@@ -14,16 +14,24 @@
  * keyframe, so with nothing to measure they evaluate to a no-op that looks like
  * the tool silently failed.
  *
+ * The same reasoning covers eased arrivals. The velocity these expressions scale
+ * is sampled just before each keyframe, and after Easy Ease or an Out curve it is
+ * close to zero. So each property is measured first, at the instant the expression
+ * samples: all arrivals eased refuses the property, some eased applies and says how
+ * many will not overshoot. The rule itself lives in `shared/arrival`.
+ *
  * Author: Dr. Huoston Rodrigues
  * Website: https://huoston.art/
  * Email: hello@huoston.art
  * Version: 0.1.0
  * Created: 2026-07-20
- * Modified: 2026-07-20
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { classifyArrivals, magnitude, subtractValues } from "../../shared/arrival";
+import type { ArrivalReport, ArrivalSample } from "../../shared/arrival";
 import { buildExpression, findExpressionKind } from "../../shared/expressions";
 import type { ExpressionParams } from "../../shared/expressions";
 
@@ -37,6 +45,18 @@ const NO_SELECTION_MESSAGE = "Select one or more animated properties first.";
 
 /** Minimum keyframes for a velocity sample to mean anything. */
 const MIN_KEYFRAMES = 2;
+
+/**
+ * The dash is built at runtime so this string stays ASCII in the host bundle.
+ * ExtendScript may read a UTF-8 file without a BOM in the system encoding, and this
+ * text reaches the panel, so a literal dash could arrive garbled. A `—` escape
+ * would not help: the build turns it back into the literal character.
+ */
+const EASED_ARRIVAL_REASON =
+  "Arrival is eased " +
+  String.fromCharCode(0x2014) +
+  " needs Linear or an In curve into the keyframe";
+const UNREADABLE_VALUES_REASON = "Could not read keyframe values";
 
 /* -------------------------------------------------------------------------- */
 /* Refusal accumulation                                                        */
@@ -173,6 +193,49 @@ const collectSelectedProperties = (comp: CompItem): Property[] => {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Arrival measurement                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** The keyframed value at a time, ignoring any expression. */
+const valueBeforeExpression = (p: Property, t: number): number | number[] => {
+  return p.valueAtTime(t, true) as unknown as number | number[];
+};
+
+/**
+ * Classify the arrival at every keyframe after the first, or return null when a
+ * value cannot be read.
+ *
+ * The arrival is sampled where the generated expression samples it, one tenth of
+ * a frame before the keyframe (see `buildExpression` in `shared/expressions`).
+ */
+const measureArrivals = (p: Property, frameDuration: number): ArrivalReport | null => {
+  const delta = frameDuration / 10;
+  const samples: ArrivalSample[] = [];
+  try {
+    const count = p.numKeys;
+    for (let k = 2; k <= count; k++) {
+      const keyTime = p.keyTime(k);
+      const previousKeyTime = p.keyTime(k - 1);
+      const arrival = subtractValues(
+        valueBeforeExpression(p, keyTime - delta),
+        valueBeforeExpression(p, keyTime - 2 * delta)
+      );
+      const segment = subtractValues(
+        valueBeforeExpression(p, keyTime),
+        valueBeforeExpression(p, previousKeyTime)
+      );
+      samples.push({
+        arrivalSpeed: magnitude(arrival) / delta,
+        segmentSpeed: magnitude(segment) / (keyTime - previousKeyTime),
+      });
+    }
+  } catch (e) {
+    return null;
+  }
+  return classifyArrivals(samples);
+};
+
+/* -------------------------------------------------------------------------- */
 /* Apply                                                                       */
 /* -------------------------------------------------------------------------- */
 
@@ -183,7 +246,8 @@ const kindLabel = (kind: string): string => {
 
 /**
  * Write the generated expression onto every eligible selected property.
- * Ineligible ones are skipped with a reason; the rest still get the effect.
+ * Ineligible ones are skipped with a reason; the rest still get the effect, with
+ * a warning on those where only some arrivals will overshoot.
  */
 export const applyExpression = (
   kind: string,
@@ -215,6 +279,7 @@ export const applyExpression = (
 
   let applied = 0;
   const skips = newSkipLog();
+  const partials: string[] = [];
 
   app.beginUndoGroup("H-Toolbelt: Apply " + kindLabel(resolvedKind));
   try {
@@ -239,8 +304,23 @@ export const applyExpression = (
         continue;
       }
 
+      const arrivals = measureArrivals(p, comp.frameDuration);
+      if (arrivals === null) {
+        addSkip(skips, UNREADABLE_VALUES_REASON, name);
+        continue;
+      }
+      if (arrivals.eased === arrivals.total) {
+        addSkip(skips, EASED_ARRIVAL_REASON, name);
+        continue;
+      }
+
       p.expression = text;
       applied++;
+      if (arrivals.eased > 0) {
+        partials.push(
+          name + " (" + arrivals.eased + " of " + arrivals.total + " arrivals eased)"
+        );
+      }
     }
   } finally {
     app.endUndoGroup();
@@ -256,6 +336,9 @@ export const applyExpression = (
   let msg = "Applied " + resolvedKind + " to " + applied + " propert" + (applied === 1 ? "y" : "ies");
   if (skips.total > 0) {
     msg += "; skipped " + skips.total + ": " + describeSkips(skips);
+  }
+  if (partials.length > 0) {
+    msg += "; partial: " + partials.join(", ");
   }
   return { applied: applied, message: msg };
 };

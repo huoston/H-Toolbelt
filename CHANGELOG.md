@@ -270,6 +270,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dynamics measures the arrival before applying. The overshoot is scaled by the
+  speed going into each keyframe, and after Easy Ease or any Out or In-Out curve
+  that speed is close to zero, so the expression applied, nothing moved and the
+  panel reported success. The host now samples each arrival where the expression
+  does. A property with every arrival eased is refused by name; one with only some
+  eased gets the effect and a `partial:` warning. An arrival counts as eased below
+  10% of its segment's average speed, a design choice kept in `shared/arrival`. The
+  generated expression text is unchanged.
+
 - Circ In and Circ Out now use Ceaser's cubic-bezier approximations of Robert
   Penner's equations: `0.6, 0.04, 0.98, 0.335` and `0.075, 0.82, 0.165, 1`. The
   previous values had a vertical tangent at one end (`x2 = 1` and `x1 = 0`). No
