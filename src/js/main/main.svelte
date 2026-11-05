@@ -33,6 +33,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Tabs from "./Tabs.svelte";
+  import ToolSection from "./ToolSection.svelte";
+  import { HELP } from "./help";
   import { DEFAULT_TAB, tabButtonId, tabPanelId } from "./tabs";
   import type { TabId } from "./tabs";
   import EasingsPanel from "./tools/EasingsPanel.svelte";
@@ -87,25 +89,21 @@
       aria-labelledby={tabButtonId("motion")}
       aria-hidden={activeTab !== "motion"}
     >
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Easings</h2>
+      <ToolSection title="Easings" help={HELP.easings}>
         <EasingsPanel />
-      </section>
+      </ToolSection>
 
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Dynamics</h2>
+      <ToolSection title="Dynamics" help={HELP.dynamics}>
         <ExpressionsPanel />
-      </section>
+      </ToolSection>
 
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Layer Sequencer</h2>
+      <ToolSection title="Layer Sequencer" help={HELP.sequencer}>
         <SequencePanel />
-      </section>
+      </ToolSection>
 
-      <section class="htb-tool">
-        <h2 class="htb-tool-name">Loops</h2>
+      <ToolSection title="Loops" help={HELP.loops}>
         <LoopPanel />
-      </section>
+      </ToolSection>
     </div>
 
     <div
@@ -117,15 +115,17 @@
       aria-hidden={activeTab !== "transform"}
     >
       <div class="htb-transform-cols">
-        <section class="htb-tool htb-transform-anchor">
-          <h2 class="htb-tool-name">Anchor Point</h2>
-          <AnchorPanel />
-        </section>
+        <div class="htb-transform-anchor">
+          <ToolSection title="Anchor Point" help={HELP.anchor}>
+            <AnchorPanel />
+          </ToolSection>
+        </div>
 
-        <section class="htb-tool htb-transform-align">
-          <h2 class="htb-tool-name">Align</h2>
-          <AlignPanel />
-        </section>
+        <div class="htb-transform-align">
+          <ToolSection title="Align" help={HELP.align}>
+            <AlignPanel />
+          </ToolSection>
+        </div>
       </div>
     </div>
   </div>
@@ -196,8 +196,9 @@
   }
 
   // Tools within a tab stack vertically with a rule between them, so each reads
-  // as its own block.
-  .htb-tool + .htb-tool {
+  // as its own block. Written from here because a section cannot see its sibling
+  // from inside its own component, and `:global` because they belong to it.
+  .htb-panel > :global(.htb-tool + .htb-tool) {
     margin-top: 14px;
     padding-top: 12px;
     border-top: 1px solid var(--htb-border, #3a3a3a);
@@ -208,7 +209,9 @@
   // set on the items and cancelled on the container: each item carries both
   // margins, and only the ones between items end up visible. Flexbox `gap` would
   // say this directly; margins stay for consistency with the project's rule of no
-  // `gap` in flex.
+  // `gap` in flex. Each section sits in its own wrapper: the sizing classes belong
+  // to this component's scoped styles, and the sections are no longer siblings, so
+  // the rule between stacked tools does not appear here.
   .htb-transform-cols {
     display: flex;
     flex-wrap: wrap;
@@ -216,21 +219,18 @@
     margin: -12px 0 0 -16px;
   }
 
+  .htb-transform-anchor,
+  .htb-transform-align {
+    margin: 12px 0 0 16px;
+  }
+
   .htb-transform-anchor {
     flex: 0 0 190px;
-    margin: 12px 0 0 16px;
   }
 
   .htb-transform-align {
     flex: 1 1 290px;
     min-width: 290px;
-  }
-
-  // Replaces the stacked-tools rule above, including its divider.
-  .htb-transform-cols > .htb-tool + .htb-tool {
-    margin: 12px 0 0 16px;
-    padding-top: 0;
-    border-top: 0;
   }
 
   // Below this the 290px minimum no longer fits even on its own row, and it
@@ -239,14 +239,5 @@
     .htb-transform-align {
       min-width: 0;
     }
-  }
-
-  .htb-tool-name {
-    margin: 0 0 8px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--htb-text-muted, #9a9a9a);
   }
 </style>

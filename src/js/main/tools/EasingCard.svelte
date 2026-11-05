@@ -58,7 +58,7 @@
   const props: Props = $props();
 
   /** Thumbnail box. Square, so the curve's slope reads truthfully. */
-  const W = 40;
+  const W = 34;
 
   /** Dynamics thumbnail: sample count, end of the rise, and the value at the top. */
   const LAST_SAMPLE = 48;

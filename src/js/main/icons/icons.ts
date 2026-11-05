@@ -28,7 +28,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-29
- * Modified: 2026-07-29
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -54,6 +54,7 @@ export type IconName =
   | "tab-transform"
   | "tab-shapes"
   | "help"
+  | "info"
   | "close";
 
 /** The grid every path is drawn on. */
@@ -123,6 +124,11 @@ export const ICONS: Record<IconName, IconShape[]> = {
     { d: "M2 8A6 6 0 1 0 14 8A6 6 0 1 0 2 8Z" },
     { d: "M6.4 6.3A1.7 1.7 0 0 1 9.6 7.1C9.6 8.2 8 8.4 8 9.5" },
     { d: "M7.35 11.6A0.65 0.65 0 1 0 8.65 11.6A0.65 0.65 0 1 0 7.35 11.6Z", filled: true },
+  ],
+  info: [
+    { d: "M2 8A6 6 0 1 0 14 8A6 6 0 1 0 2 8Z" },
+    { d: "M8 7.2V11.4" },
+    { d: "M7.35 4.9A0.65 0.65 0 1 0 8.65 4.9A0.65 0.65 0 1 0 7.35 4.9Z", filled: true },
   ],
   close: [{ d: "M4.5 4.5L11.5 11.5" }, { d: "M11.5 4.5L4.5 11.5" }],
 };

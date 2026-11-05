@@ -67,6 +67,7 @@
       class="htb-seq-input"
       type="number"
       step="1"
+      title="Frames between one layer and the next."
       bind:value={offsetFrames}
       disabled={busy}
     />
@@ -78,6 +79,7 @@
     <select
       id="htb-seq-order"
       class="htb-seq-select"
+      title="Which layer goes first. Selection order is never used — After Effects does not keep it."
       bind:value={order}
       disabled={busy}
     >
@@ -95,6 +97,7 @@
         class="htb-seq-input"
         type="number"
         step="1"
+        title="Same seed, same random order."
         bind:value={seed}
         disabled={busy}
       />

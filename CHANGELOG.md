@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- In-panel help: an ⓘ button on every section opens a card with what the tool does,
+  how to use it step by step, its options and what is good to know. Cards sit in the
+  flow above the controls, and close with the button, × or Esc.
+
+- Tooltips on controls that lacked a useful one: Keys in Loops, Offset, Order and
+  Seed in the Layer Sequencer. The nine Anchor Point buttons now show a readable
+  name instead of a raw id.
+
 - Easings: nine new bezier presets (Quart, Quint and Circ, each in/out/in-out),
   taking the library from 14 to 23 curves. All nine stay inside the unit square
   and run through the keyframe engine, which is untouched.
@@ -273,6 +281,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as one investigation serving both tools.
 
 ### Changed
+
+- Curve thumbnails on the Easings and Dynamics cards are smaller: 34 px, down from
+  40 px.
 
 - Dynamics measures the arrival before applying. The overshoot is scaled by the
   speed going into each keyframe, and after Easy Ease or any Out or In-Out curve

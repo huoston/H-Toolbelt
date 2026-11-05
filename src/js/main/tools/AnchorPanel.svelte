@@ -31,6 +31,20 @@
   import { evalTS } from "../../lib/utils/bolt";
   import { ANCHOR_POINTS } from "../../../shared/anchor";
 
+  // Point id -> readable name. Lives here rather than in `shared/anchor` because
+  // the host has no use for it, and `shared` is compiled into the host bundle.
+  const POINT_NAMES: Record<string, string> = {
+    "top-left": "Top left",
+    "top-center": "Top centre",
+    "top-right": "Top right",
+    "middle-left": "Middle left",
+    center: "Centre",
+    "middle-right": "Middle right",
+    "bottom-left": "Bottom left",
+    "bottom-center": "Bottom centre",
+    "bottom-right": "Bottom right",
+  };
+
   let feedback: string = $state("");
   let isError: boolean = $state(false);
   let busy: boolean = $state(false);
@@ -67,8 +81,8 @@
         class="htb-anchor-cell"
         class:htb-anchor-center={point.id === "center"}
         disabled={busy}
-        title={point.id}
-        aria-label={point.id}
+        title={POINT_NAMES[point.id]}
+        aria-label={POINT_NAMES[point.id]}
         onclick={() => setAnchor(point.id)}
       >
         {point.label}

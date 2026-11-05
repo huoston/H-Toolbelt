@@ -33,7 +33,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-10
- * Modified: 2026-11-04
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -91,6 +91,11 @@ const REQUIRED_TOKENS = [
   '"align-left"',
   '"tab-motion"',
   "M2 2V14",
+  // main/help and ToolSection — a line of the help text, a heading that only
+  // exists as template text, and the name of the button's icon.
+  "Needs a non-eased last keyframe",
+  ">How to use<",
+  '"info"',
 ];
 
 const fail = (msg) => {
