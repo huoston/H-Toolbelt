@@ -11,14 +11,14 @@ Four states, and the differences matter:
 - **Considering** — not committed. Ideas being weighed, any of which may be
   dropped.
 
-The panel is organised into tabs, so this document is too.
+The panel is organized into tabs, so this document is too.
 
-| Tab             | Shipped                                 | Next up                          |
-| --------------- | --------------------------------------- | -------------------------------- |
-| **Motion**      | Easings, Sequencing, Expression Effects | Loop Creator, then Timing suite  |
-| **Transform**   | Anchor Point, Align *(built)*           | Align: 3-D, parent, key layer    |
-| **Shapes**      | Shape Layer Magic v1 *(built)*          | —                                |
-| **Compositing** | — *(tab not shown until its first tool)*| Grounding, Atmosphere, Depth     |
+| Tab             | Shipped                                                         | Next up                                                       |
+| --------------- | --------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Motion**      | Easings, Layer Sequencer, Dynamics *(built)*, Loops *(built)*   | Expression composer, easings between keyframes, Timing suite  |
+| **Transform**   | Anchor Point, Align *(built)*                                   | Align: 3-D, parent, key layer                                 |
+| **Shapes**      | Shape Layer Magic v1 *(built, tab hidden)*                      | —                                                             |
+| **Compositing** | — *(tab not shown until its first tool)*                        | Grounding, Atmosphere, Depth                                  |
 
 ---
 
@@ -33,15 +33,28 @@ The panel is organised into tabs, so this document is too.
 - **One-Click Expression Effects** — bounce and elastic in ES3 text compatible
   with both expression engines, plus Clear.
 
+### Built — lands in v0.2.0
+
+- **Loop Creator**, shown as **Loops**. Loop expressions on the selected properties:
+  **Cycle**, **Ping-Pong**, **Offset** and **Continue**, in either direction, with an
+  optional keyframe count, plus **Clear**. Continue refuses an eased end keyframe.
+- **Dynamics**, the new name of Expression Effects. Six baked presets (Bounce and
+  Elastic, each Soft, Medium and Hard) as cards. Eased arrivals are refused instead
+  of applying an invisible effect.
+- **Easings library** — 23 curves as cards that draw their own shape.
+- **Layer Sequencer**, the new name of Layer Sequencing.
+- **In-panel help** — a card on every section with steps and notes.
+
 ### Planned
 
-- **Loop Creator.** Loop expressions on the selected properties: **Cycle**,
-  **Ping-Pong**, **Offset** and **Continue**, with an optional keyframe count so
-  a loop can cover the last N keyframes instead of the whole property, plus
-  **Clear**. Reuses the Expression Effects infrastructure — the same ES3 text
-  generation, the same refusal rules (never overwrite an existing expression,
-  require enough keyframes to be meaningful), the same one-undo-group-per-run.
-  First up because the machinery already exists and is tested.
+- **Expression composer.** After Effects allows one expression per property, so
+  Loops and Dynamics cannot share one today. The plan is a single H-Toolbelt
+  expression per property, built from stages that each tool turns on, changes or
+  off. [Issue #1](https://github.com/huoston/H-Toolbelt/issues/1)
+
+- **Penner easings between keyframes.** Back, Elastic and Bounce (In, Out and
+  In-Out), so an eased arrival can still overshoot. They will appear as cards in the
+  Dynamics section. [Issue #2](https://github.com/huoston/H-Toolbelt/issues/2)
 
 - **Timing suite.** Five small tools that share one idea — putting keyframes and
   layers back on the frame grid:
@@ -105,8 +118,8 @@ Deliberately out of v1, in rough order of usefulness:
 - **Align to a key layer** — one selected layer as the target, instead of the
   comp or the whole selection.
 - **Distribute by equal edge gaps** — equal *space between* boxes rather than
-  equal spacing between centres. Both distribute modes place interior layers by
-  centre today, which is right for uniformly sized layers and looks uneven when
+  equal spacing between centers. Both distribute modes place interior layers by
+  center today, which is right for uniformly sized layers and looks uneven when
   sizes differ.
 - **Aligning shapes within a single layer.** Refused today with a message saying
   so. After Effects exposes no per-group bounding box to scripting —
@@ -118,7 +131,11 @@ Deliberately out of v1, in rough order of usefulness:
 
 ## Shapes
 
-### Built — lands in v0.2.0
+### Built, hidden — in the code for v0.2.0
+
+The Shapes tab is hidden, because one cleanup tool does not justify a tab. The code
+and its page stay in the repository, and the tool returns when the tab has more to
+offer.
 
 - **Shape Layer Magic (v1)** — cleanup for Illustrator/SVG imports: **remove
   empty groups** and **remove the artboard rectangle**, plus **Clean all** which
@@ -163,7 +180,7 @@ Making a subject belong to the plate it was placed on.
 ### Depth
 
 - **DOF Blur** — Camera Lens Blur driven by distance from camera.
-- **Depth colour grade** — Lumetri per depth band: warm foreground, cool
+- **Depth color grade** — Lumetri per depth band: warm foreground, cool
   background, desaturated far distance.
 
 ### Sync
@@ -189,8 +206,6 @@ Not commitments. Roughly in order of how likely they are to happen.
 - **Per-property refusal messages for Easings.** The other tools name what they
   skipped and why; Easings skips silently. Closing that gap is the most obvious
   inconsistency in the panel today. See [LIMITATIONS](./LIMITATIONS.md#easings).
-- **Calibrated bounce/elastic presets** — Soft / Medium / Hard, so the effects
-  are usable without understanding what amplitude, frequency and decay do.
 - **Usage GIFs in the README.** A motion-design tool that shows no motion is a
   poor advertisement for itself.
 - **Producer signing certificate.** The `.zxp` is self-signed today, so
@@ -205,10 +220,9 @@ Not commitments. Roughly in order of how likely they are to happen.
   Z rotation. Extending it to the full 3-D transform is tractable, just not done.
 - **Listing on aescripts + aeplugins.** Wider reach than GitHub Releases for the
   audience this is built for. The panel would stay free and GPL.
-- **CEP → UXP migration.** Adobe's newer extensibility platform. CEP works today
-  and is what After Effects CC 2019–2026 supports, but it is expected to be
-  retired eventually. This is a rewrite of the panel layer, not of the tools'
-  logic — the maths lives in framework-agnostic modules, which is partly why it
+- **CEP → UXP migration.** Adobe's newer extensibility platform. CEP works today,
+  but it is expected to be retired eventually. This is a rewrite of the panel layer, not of the tools'
+  logic — the math lives in framework-agnostic modules, which is partly why it
   was written that way.
 
 ---
@@ -220,11 +234,15 @@ technique is its own change.
 
 1. **Tab shell** — done. Everything below needs somewhere to live that is not one
    long scroll.
-2. **Loop Creator** — reuses tested expression machinery; almost no new risk.
-3. **Frame-Rate Match** — one effect, one parameter; the smallest possible probe
+2. **Loop Creator** — done. It reused tested expression machinery.
+3. **Expression composer** ([issue #1](https://github.com/huoston/H-Toolbelt/issues/1)) — one expression per
+   property, so the tools that write expressions can work together.
+4. **Penner easings between keyframes** ([issue #2](https://github.com/huoston/H-Toolbelt/issues/2)) — they
+   become a stage of that same expression.
+5. **Frame-Rate Match** — one effect, one parameter; the smallest possible probe
    of "apply an effect and verify it exists first".
-4. **The rest of the Timing suite** — keyframe arithmetic, no new AE surface.
-5. **Compositing: Grounding → Atmosphere → Depth** — in that order. Grounding
+6. **The rest of the Timing suite** — keyframe arithmetic, no new AE surface.
+7. **Compositing: Grounding → Atmosphere → Depth** — in that order. Grounding
    pays off most and uses the fewest effects; Depth needs camera data and is the
    most fragile.
 
@@ -234,11 +252,11 @@ technique is its own change.
 
 - **Hosts other than After Effects.** The tools are built around AE's layer and
   property model.
-- **Any network feature.** No telemetry, no update checks, no licence server. The
+- **Any network feature.** No telemetry, no update checks, no license server. The
   panel works offline and will stay that way.
 
 ## Suggesting something
 
-[Open a feature request](../../issues/new?template=feature_request.md) describing
+[Open a feature request](https://github.com/huoston/H-Toolbelt/issues/new?template=feature_request.md) describing
 the problem you are hitting, not only the feature you have in mind — the problem
 is usually the more useful half.

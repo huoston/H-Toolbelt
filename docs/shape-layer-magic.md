@@ -1,5 +1,7 @@
 # Shape Layer Magic
 
+> Hidden from the panel in this version. The tool still works and will return when the Shapes tab has more to offer.
+
 > **v1 — cleanup only.** This version deletes debris. It does not restructure or
 > merge anything. See [What v1 does not do](#what-v1-does-not-do) for why
 > flattening is absent.

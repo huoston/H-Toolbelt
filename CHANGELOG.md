@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Documentation with the panel's own icons and screenshots: a new README and guide
+  index, a Loops page (`docs/loop.md`) and an install, update and uninstall guide
+  (`docs/install.md`). Issues #1 and #2 track what is in development.
+
 - In-panel help: an ⓘ button on every section opens a card with what the tool does,
   how to use it step by step, its options and what is good to know. Cards sit in the
   flow above the controls, and close with the button, × or Esc.
@@ -23,8 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dynamics: six baked expression presets (Bounce and Elastic, each Soft, Medium
   and Hard) in the card grid, in `shared/dynamics`. Clicking a card applies it
-  immediately through the existing `applyExpression`; the host and the generated
-  text are unchanged. Each card draws a linear rise followed by the preset's
+  immediately through `applyExpression`, and the generated text is unchanged. The
+  host also measures the arrival first; see Changed. Each card draws a linear rise followed by the preset's
   decaying oscillation, from `oscillation`, the numeric twin of the generated
   expression's factor. A test pins the two together through the expression text.
 
@@ -203,6 +207,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `yarn build`, `yarn build:debug` and `yarn zxp` now exit with an error when `dist/`
+  comes out incomplete. `vite build` can exit 0 after a compile error in the panel,
+  so `scripts/check-dist.mjs` checks the output itself.
+
+- Text: the Continue tooltip covers the In direction, the no-bounding-box messages
+  say "unrecognized", and the Dynamics help note says how many arrivals will not
+  bounce.
+
+- The self-signed certificate and the panel's flyout menu now name Huoston Rodrigues
+  instead of the template's `Company`.
+
 - Help text: Loops now covers the In direction (Keys, where to play, Continue);
   Dynamics explains partial and very short eased arrivals; Anchor Point lists the
   shape group rules and the Orientation refusal.
@@ -214,11 +229,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`aftereffects/24.6` instead of `AfterEffects/24.6`), which broke
   `typecheck:host` on case-sensitive file systems.
 
-- Spacing no longer depends on `gap`, which older CEF versions either ignore or do
-  not know by that name. In flexbox it only exists from Chromium 84, so it is absent
-  on both After Effects 16 (CEP 9, Chromium 61) and 17.1–18.3 (CEP 10, Chromium 74).
-  In grid it only exists under that name from Chromium 66; before that the property
-  is `grid-gap`.
+- Spacing no longer depends on `gap`. In flexbox it only exists from Chromium 84, and
+  in grid only under that name from Chromium 66; before that the property is
+  `grid-gap`. The minimum is now After Effects 18.4 (CEP 11, Chromium 88), which has
+  both, so this does not change anything on screen in a supported version.
 
   Flex rules now use margins instead: between siblings when the row does not wrap,
   and half the gutter on each item, cancelled on the container, when it does. Grid

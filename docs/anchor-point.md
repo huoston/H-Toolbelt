@@ -1,9 +1,11 @@
 # Anchor Point
 
+<img src="assets/screenshots/transform-tab.png" width="420" alt="The Transform tab, with the Anchor Point grid on the left and the Align to toggle, align buttons and distribute buttons on the right">
+
 ## What it does
 
 Moves a layer's anchor point to one of nine positions on its bounding box —
-corners, edge midpoints, or centre — and compensates `position` so your work is
+corners, edge midpoints, or center — and compensates `position` so your work is
 preserved. Moving an anchor normally shifts the layer, because `position` is
 measured from the anchor; this tool cancels that shift, including at non-100%
 scale and non-zero rotation, where a naive correction visibly slips.
@@ -22,8 +24,11 @@ one tool now.
 
 ## How to use
 
-1. Select one or more layers.
-2. Click one of the nine cells in the 3×3 grid.
+1. Select one or more layers, or shape groups inside shape layers (one group per
+   layer).
+2. Park the playhead on a frame where the layer looks right. Text and animated
+   layers are measured at the current frame.
+3. Click one of the nine cells in the 3×3 grid.
 
 It applies immediately — there is no separate Apply button.
 
@@ -41,14 +46,14 @@ The 3×3 grid, in reading order:
 | ←    | `middle-left`  | •    | `center`        | →    | `middle-right`  |
 | ↙    | `bottom-left`  | ↓    | `bottom-center` | ↘    | `bottom-right`  |
 
-There are no parameters. The centre cell is highlighted as the most common
+There are no parameters. The center cell is highlighted as the most common
 target.
 
 ## When it refuses (and why)
 
 Refusal messages name the layer and its `matchName`, so an unexpected refusal
 identifies itself — for example
-`Animated scale/rotation: skipped Ball [ADBE AV Layer]`.
+`Expression on position: skipped (Ball) [ADBE AV Layer]`.
 
 When several layers are skipped, the panel reports the count plus the most common
 reason: `Skipped 3 layer(s): <reason>`, or
@@ -69,8 +74,9 @@ reason: `Skipped 3 layer(s): <reason>`, or
 | `3D rotation not supported yet: skipped`          | A 3D layer with X/Y rotation or orientation. The 2-D compensation does not cover it.            | Zero the X/Y rotation, apply, then restore. Z-only rotation works fine.     |
 | `Empty layer (zero-size bounds)`                  | The layer measures zero by zero — an empty shape layer, or text with no glyphs at this frame.   | Add content, then apply.                                                    |
 | `No bounding box available`                       | After Effects returned no usable rectangle for this layer.                                      | Check the layer has visible content at the current time.                    |
-| `No bounding box available for unrecognised layer type` | Same, on a layer type this build does not know.                                          | Please [open an issue](../../../issues) with the `matchName` shown.         |
+| `No bounding box available for unrecognized layer type` | Same, on a layer type this build does not know.                                          | Please [open an issue](https://github.com/huoston/H-Toolbelt/issues) with the `matchName` shown.         |
 | `No transform group` / `No anchor/position properties` / `Unreadable transform values: skipped` | The expected transform properties were missing or unreadable. | Unusual; please open an issue with the `matchName` shown.                   |
+| `Unknown anchor point: X`                         | An unrecognized point id reached the host.                                                      | Should not happen from the panel; please open an issue.                     |
 
 ### Shape group mode
 

@@ -1,5 +1,7 @@
 # Align & Distribute
 
+<img src="assets/screenshots/transform-tab.png" width="420" alt="The Transform tab, with the Anchor Point grid on the left and the Align to toggle, align buttons and distribute buttons on the right">
+
 ## What it does
 
 Aligns and distributes the selected layers by their bounding box **in
@@ -14,7 +16,8 @@ frame and the whole motion path shifts with it.
 
 ## How to use
 
-1. Select two or more layers (three or more to distribute).
+1. Select the layers: one or more to align, two or more to distribute against the
+   comp, three or more to distribute within the selection.
 2. Pick what to align against — **Comp** or **Selection**.
 3. Click one of the six align buttons, or one of the two distribute buttons.
 
@@ -34,14 +37,14 @@ governs **both** the six alignments **and** the two distributions.
 
 ### Align
 
-| Button | Mode      | What it does                          |
-| ------ | --------- | --------------------------------------- |
-| ⇤      | `left`    | Left edges meet the target's left.      |
-| ↔      | `hcenter` | Horizontal centres line up.             |
-| ⇥      | `right`   | Right edges meet the target's right.    |
-| ⇡      | `top`     | Top edges meet the target's top.        |
-| ↕      | `vcenter` | Vertical centres line up.               |
-| ⇣      | `bottom`  | Bottom edges meet the target's bottom.  |
+| Button | Mode | What it does |
+| ------ | ---- | ------------ |
+| <img src="assets/icons/align-left.svg" width="16" height="16" alt="Align left icon"> | `left` | Left edges meet the target's left. |
+| <img src="assets/icons/align-hcenter.svg" width="16" height="16" alt="Align horizontal centers icon"> | `hcenter` | Horizontal centers line up. |
+| <img src="assets/icons/align-right.svg" width="16" height="16" alt="Align right icon"> | `right` | Right edges meet the target's right. |
+| <img src="assets/icons/align-top.svg" width="16" height="16" alt="Align top icon"> | `top` | Top edges meet the target's top. |
+| <img src="assets/icons/align-vcenter.svg" width="16" height="16" alt="Align vertical centers icon"> | `vcenter` | Vertical centers line up. |
+| <img src="assets/icons/align-bottom.svg" width="16" height="16" alt="Align bottom icon"> | `bottom` | Bottom edges meet the target's bottom. |
 
 Each button moves one axis only, so a horizontal align never nudges a layer
 vertically. That is what makes them composable — **left** then **top** puts a
@@ -49,10 +52,10 @@ layer in the corner.
 
 ### Distribute
 
-| Button         | What it does                                                       |
-| -------------- | -------------------------------------------------------------------- |
-| **Horizontal** | Spaces box centres evenly left to right.                            |
-| **Vertical**   | Spaces box centres evenly top to bottom.                            |
+| Button | Mode | What it does |
+| ------ | ---- | ------------ |
+| <img src="assets/icons/distribute-horizontal.svg" width="16" height="16" alt="Distribute horizontally icon"> | **Horizontal** | Spaces box centers evenly left to right. |
+| <img src="assets/icons/distribute-vertical.svg" width="16" height="16" alt="Distribute vertically icon"> | **Vertical** | Spaces box centers evenly top to bottom. |
 
 Distribution follows the same **Align to** toggle, and the two modes answer
 different questions:
@@ -67,8 +70,8 @@ between the two ends to move, while spreading *across the comp* moves the ends
 themselves, so two layers is already meaningful.
 
 Order is taken from the layers' positions on screen, not from their timeline
-order. Interior layers are spaced by **centre**, so layers of differing size end
-up evenly centred rather than evenly gapped — equal edge gaps is a different
+order. Interior layers are spaced by **center**, so layers of differing size end
+up evenly centered rather than evenly gapped — equal edge gaps is a different
 operation and is on the roadmap.
 
 ## When it refuses (and why)
@@ -91,6 +94,10 @@ still processed.
 | `Aligning shapes within a layer isn't supported yet - select layers instead.` | You selected shape groups inside a shape layer rather than layers. After Effects exposes no per-group bounding box to scripting. | Select the layers themselves. Per-group bounds are on the roadmap. |
 | `Could not read composition bounds.`              | The composition's width or height came back unreadable, so there is no target to align to.    | Unusual; please open an issue naming your comp settings. |
 | `Unreadable layer bounds: skipped`                | The layer's box worked out to a non-numeric value.                                            | Unusual; please open an issue with the `matchName` shown. |
+| `Unreadable position values: skipped`             | After Effects would not hand over the position values while moving the layer.                 | Unusual; please open an issue with the `matchName` shown. |
+| `No transform group` / `No anchor/position properties` / `Unreadable transform values: skipped` | The expected transform properties were missing or unreadable. | Unusual; please open an issue with the `matchName` shown. |
+| `No bounding box available for unrecognized layer type` | Same as `No bounding box available`, on a layer type this build does not know. | Please open an issue with the `matchName` shown. |
+| `Unknown align mode: X` / `Unknown align target: X` / `Unknown distribute axis: X` / `Unknown distribute target: X` | An unrecognized id reached the host. | Should not happen from the panel; please open an issue. |
 
 On success: `Aligned 4 layer(s)` or `Distributed 5 layer(s)`, plus a
 `; skipped N: <reason>` note when part of the selection was declined.
@@ -102,11 +109,11 @@ On success: `Aligned 4 layer(s)` or `Distributed 5 layer(s)`, plus a
   visual extent is the entire reason for measuring in comp space.
 - **Everything is measured before anything moves.** "Align to selection" targets
   the union of the boxes as they are when you click, and distribution needs every
-  centre up front; reading them while layers were already moving would chase a
+  center up front; reading them while layers were already moving would chase a
   target that keeps shifting.
 - **Animated layers keep their motion path.** The whole position track shifts by
   the alignment delta — one constant vector — so the path keeps its shape, its
-  keyframe count and its eases. Same behaviour as [Anchor Point](./anchor-point.md);
+  keyframe count and its eases. Same behavior as [Anchor Point](./anchor-point.md);
   a layer that survives one survives the other.
 - **Text and shape boxes are per-frame.** The box covers what is drawn at the
   current time, so alignment reflects that frame.
@@ -125,7 +132,7 @@ Deferred to a later release, tracked on the [roadmap](../ROADMAP.md):
 - **Align to a key layer** — picking one layer as the target instead of the comp
   or the whole selection.
 - **Distribute by edge spacing** — equal gaps between boxes rather than equal
-  spacing between centres.
+  spacing between centers.
 - **Aligning shapes within a single layer.** Selecting several groups inside one
   shape layer is refused today. After Effects exposes no per-group bounding box
   to scripting — `sourceRectAtTime` reports the whole layer — which is the same

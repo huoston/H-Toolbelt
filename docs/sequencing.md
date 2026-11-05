@@ -1,4 +1,4 @@
-# Sequencing
+# Layer Sequencer
 
 ## What it does
 
@@ -20,7 +20,7 @@ is trimmed.
 | **Offset** | `2` frames | Time between consecutive layers. Negative values are valid and cascade backwards in time.            |
 | **Order**  | `Timeline (top→bottom)` | How the cascade order is derived. See below.                                            |
 | **Seed**   | `1`        | Only shown when Order is `Random`. Same seed + same selection = same shuffle, every time.            |
-| **⟳**      | —          | Next seed. Increments rather than randomising, so you can step back to the arrangement you just saw. |
+| **⟳**      | —          | Next seed. Increments rather than randomizing, so you can step back to the arrangement you just saw. |
 
 ### Order modes
 
@@ -39,7 +39,7 @@ is trimmed.
 | `Select 2+ layers to sequence.`                                   | Fewer than two layers selected — one layer has nothing to stagger against. | Select at least two layers.                          |
 | `Select 2+ unlocked layers to sequence; skipped locked layer(s): A, B.` | Locked layers reject writes, and fewer than two remained. | Unlock the layers you want sequenced.                       |
 | `Offset must be a number.`                                        | The offset field was empty or not a number.                         | Enter a whole number of frames.                             |
-| `Unknown order: X`                                                | An unrecognised order id reached the host.                          | Should not happen from the panel; please open an issue.     |
+| `Unknown order: X`                                                | An unrecognized order id reached the host.                          | Should not happen from the panel; please open an issue.     |
 
 On success: `Sequenced N layer(s)`, plus `; skipped locked layer(s): A, B` when
 some layers in the selection were locked but at least two were not.

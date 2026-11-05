@@ -96,7 +96,7 @@ On success the panel reports `Applied to N keyframes`.
   receives the same influence and speed. After Effects' own Easy Ease behaves the
   same way; if you need per-dimension timing, separate the dimensions and ease
   them individually.
-- **Silent skips.** Unlike the other three tools, Easings does not report *which*
+- **Silent skips.** Unlike the other tools, Easings does not report *which*
   properties it skipped. A property that cannot vary over time, has fewer than
   two selected keyframes, or holds a non-numeric value (a mask path, a text
   document, a colour) is passed over without a per-property reason; if nothing at
