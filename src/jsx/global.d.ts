@@ -1,4 +1,4 @@
-/// <reference path="../../node_modules/types-for-adobe/aftereffects/24.6/index.d.ts" />
+/// <reference path="../../node_modules/types-for-adobe/AfterEffects/24.6/index.d.ts" />
 
 // The After Effects API declarations, loaded here rather than through a tsconfig
 // `types` entry so that *any* program including these host sources picks them
@@ -10,7 +10,7 @@
 // even before TS5108 stopped the check from running at all.
 //
 // 24.6 is the newest set vendored by types-for-adobe. It is a superset of what
-// CC 2019 exposes, so it will type-check calls an older host lacks; the CC 2019
+// AE 18.4 exposes, so it will type-check calls an older host lacks; the AE 18.4
 // floor is a runtime promise enforced by the manifest range, not by these
 // declarations.
 

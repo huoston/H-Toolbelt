@@ -207,7 +207,8 @@
   // do not fit. CSS cannot tell whether a flex row has wrapped, so the spacing is
   // set on the items and cancelled on the container: each item carries both
   // margins, and only the ones between items end up visible. Flexbox `gap` would
-  // say this directly, but the CEF in CC 2019 predates it.
+  // say this directly; margins stay for consistency with the project's rule of no
+  // `gap` in flex.
   .htb-transform-cols {
     display: flex;
     flex-wrap: wrap;

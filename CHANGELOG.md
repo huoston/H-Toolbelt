@@ -195,6 +195,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The path to the host's type declarations had the wrong capitalization
+  (`aftereffects/24.6` instead of `AfterEffects/24.6`), which broke
+  `typecheck:host` on case-sensitive file systems.
+
 - Spacing no longer depends on `gap`, which older CEF versions either ignore or do
   not know by that name. In flexbox it only exists from Chromium 84, so it is absent
   on both After Effects 16 (CEP 9, Chromium 61) and 17.1–18.3 (CEP 10, Chromium 74).
@@ -278,6 +282,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   eased gets the effect and a `partial:` warning. An arrival counts as eased below
   10% of its segment's average speed, a design choice kept in `shared/arrival`. The
   generated expression text is unchanged.
+
+- The minimum After Effects version is now 18.4, so older versions refuse the
+  install instead of showing a blank panel. The Svelte 5 runtime does not run on the
+  Chromium in CEP 9 or CEP 10, and Adobe's CEP table puts the next one, CEP 11
+  (Chromium 88), at AE 18.4.
 
 - Circ In and Circ Out now use Ceaser's cubic-bezier approximations of Robert
   Penner's equations: `0.6, 0.04, 0.98, 0.335` and `0.075, 0.82, 0.165, 1`. The

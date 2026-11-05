@@ -10,9 +10,9 @@ const config: CEP_Config = {
   servePort: 5000,
   startingDebugPort: 8860,
   extensionManifestVersion: 6.0,
-  requiredRuntimeVersion: 9.0,
+  requiredRuntimeVersion: 11.0,
   hosts: [
-    { name: "AEFT", version: "[16.0,99.9]" }, // floor: CC 2019 (AEFT 16.0)
+    { name: "AEFT", version: "[18.4,99.9]" }, // floor: AE 18.4 (2021) — first release on CEP 11 / Chromium 88; the Svelte 5 runtime needs it
   ],
 
   type: "Panel",
