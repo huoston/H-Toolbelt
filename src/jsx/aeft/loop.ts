@@ -13,6 +13,11 @@
  * keyframe there is no span and `loopOut` returns a constant. The property would
  * look untouched while carrying an expression, which is the worst of both.
  *
+ * Continue has a guard of its own for the same reason. It extrapolates from the
+ * speed at the keyframe it starts from, so with an eased keyframe the expression
+ * applies and nothing moves. That keyframe is measured first, with the sampling
+ * and the threshold the Dynamics tool uses, from `shared/arrival`.
+ *
  * WHY THIS FILE DOES NOT IMPORT FROM `expressions.ts`: the two tools share the
  * shape of their guards but not their meaning, and the small readers below
  * (`readExpression`, `keyCount`, ...) are private to that module. Duplicating a
@@ -29,17 +34,19 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-28
- * Modified: 2026-07-28
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { classifyArrivals, magnitude, subtractValues } from "../../shared/arrival";
 import {
   buildLoopExpression,
   findLoopDir,
   findLoopType,
   loopTypeLabel,
 } from "../../shared/loop";
+import type { LoopDir } from "../../shared/loop";
 
 export interface LoopResult {
   applied: number;
@@ -51,6 +58,18 @@ const NO_SELECTION_MESSAGE = "Select one or more animated properties first.";
 
 /** A loop needs a span to replay, and a span needs two keyframes. */
 const MIN_KEYFRAMES = 2;
+
+/**
+ * The dash is built at runtime so these strings stay ASCII in the host bundle, as
+ * in `expressions.ts`: this text reaches the panel, and ExtendScript may read a
+ * UTF-8 file without a BOM in the system encoding.
+ */
+const DASH = String.fromCharCode(0x2014);
+const EASED_LAST_KEY_REASON =
+  "Last keyframe is eased " + DASH + " Continue needs speed (make it Linear)";
+const EASED_FIRST_KEY_REASON =
+  "First keyframe is eased " + DASH + " Continue needs speed (make it Linear)";
+const UNREADABLE_VALUES_REASON = "Could not read keyframe values";
 
 /* -------------------------------------------------------------------------- */
 /* Refusal accumulation                                                        */
@@ -188,6 +207,61 @@ const collectSelectedProperties = (comp: CompItem): Property[] => {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Continue measurement                                                        */
+/* -------------------------------------------------------------------------- */
+
+/** The keyframed value at a time, ignoring any expression. */
+const valueBeforeExpression = (p: Property, t: number): number | number[] => {
+  return p.valueAtTime(t, true) as unknown as number | number[];
+};
+
+/**
+ * Whether the keyframe Continue would start from is eased, or null when a value
+ * cannot be read. Out starts from the last keyframe and In from the first.
+ *
+ * The speed is sampled just inside the segment, one and two tenths of a frame from
+ * the keyframe, as in the Dynamics measurement in `expressions.ts`.
+ */
+const isContinueKeyEased = (
+  p: Property,
+  dir: LoopDir,
+  frameDuration: number
+): boolean | null => {
+  const delta = frameDuration / 10;
+  try {
+    let later: number | number[];
+    let earlier: number | number[];
+    let keyTime: number;
+    let otherTime: number;
+    if (dir === "in") {
+      keyTime = p.keyTime(1);
+      otherTime = p.keyTime(2);
+      later = valueBeforeExpression(p, keyTime + 2 * delta);
+      earlier = valueBeforeExpression(p, keyTime + delta);
+    } else {
+      const count = p.numKeys;
+      keyTime = p.keyTime(count);
+      otherTime = p.keyTime(count - 1);
+      later = valueBeforeExpression(p, keyTime - delta);
+      earlier = valueBeforeExpression(p, keyTime - 2 * delta);
+    }
+    const segment = subtractValues(
+      valueBeforeExpression(p, keyTime),
+      valueBeforeExpression(p, otherTime)
+    );
+    const report = classifyArrivals([
+      {
+        arrivalSpeed: magnitude(subtractValues(later, earlier)) / delta,
+        segmentSpeed: magnitude(segment) / Math.abs(keyTime - otherTime),
+      },
+    ]);
+    return report.eased === 1;
+  } catch (e) {
+    return null;
+  }
+};
+
+/* -------------------------------------------------------------------------- */
 /* Apply                                                                       */
 /* -------------------------------------------------------------------------- */
 
@@ -247,6 +321,21 @@ export const applyLoop = (
       if (!isSupportedValueType(p)) {
         addSkip(skips, "Unsupported property type", name);
         continue;
+      }
+      if (resolvedType === "continue") {
+        const eased = isContinueKeyEased(p, resolvedDir, comp.frameDuration);
+        if (eased === null) {
+          addSkip(skips, UNREADABLE_VALUES_REASON, name);
+          continue;
+        }
+        if (eased) {
+          addSkip(
+            skips,
+            resolvedDir === "in" ? EASED_FIRST_KEY_REASON : EASED_LAST_KEY_REASON,
+            name
+          );
+          continue;
+        }
       }
 
       p.expression = text;

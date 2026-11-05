@@ -203,6 +203,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Help text: Loops now covers the In direction (Keys, where to play, Continue);
+  Dynamics explains partial and very short eased arrivals; Anchor Point lists the
+  shape group rules and the Orientation refusal.
+
+- US spelling in UI text: "center" instead of "centre" in the help, the Anchor Point
+  names and the Align tooltips.
+
 - The path to the host's type declarations had the wrong capitalization
   (`aftereffects/24.6` instead of `AfterEffects/24.6`), which broke
   `typecheck:host` on case-sensitive file systems.
@@ -281,6 +288,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as one investigation serving both tools.
 
 ### Changed
+
+- Loop Continue refuses an eased keyframe. It extrapolates from the speed at the
+  keyframe it starts from, so after an eased one the expression applied, nothing
+  moved and the panel reported success. The host now samples that speed as Dynamics
+  does, with the same threshold, and skips the property with
+  `Last keyframe is eased — Continue needs speed (make it Linear)`, or
+  `First keyframe is eased — …` for the In direction. Cycle, Ping-Pong and Offset
+  are unchanged.
 
 - Curve thumbnails on the Easings and Dynamics cards are smaller: 34 px, down from
   40 px.
