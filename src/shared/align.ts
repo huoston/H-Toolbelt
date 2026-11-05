@@ -31,7 +31,7 @@
  * Email: hello@huoston.art
  * Version: 0.2.0
  * Created: 2026-07-29
- * Modified: 2026-07-29
+ * Modified: 2026-11-05
  * License: GPL-3.0-or-later
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -77,10 +77,10 @@ export interface AlignModeSpec {
 /** The six alignments, in the order the UI lists them. */
 export const ALIGN_MODES: AlignModeSpec[] = [
   { id: "left", label: "⇤", title: "Align left edges." },
-  { id: "hcenter", label: "↔", title: "Align horizontal centres." },
+  { id: "hcenter", label: "↔", title: "Align horizontal centers." },
   { id: "right", label: "⇥", title: "Align right edges." },
   { id: "top", label: "⇡", title: "Align top edges." },
-  { id: "vcenter", label: "↕", title: "Align vertical centres." },
+  { id: "vcenter", label: "↕", title: "Align vertical centers." },
   { id: "bottom", label: "⇣", title: "Align bottom edges." },
 ];
 
@@ -109,12 +109,12 @@ export const DISTRIBUTE_AXES: DistributeAxisSpec[] = [
   {
     id: "x",
     label: "Horizontal",
-    title: "Space layer centres evenly left to right.",
+    title: "Space layer centers evenly left to right.",
   },
   {
     id: "y",
     label: "Vertical",
-    title: "Space layer centres evenly top to bottom.",
+    title: "Space layer centers evenly top to bottom.",
   },
 ];
 

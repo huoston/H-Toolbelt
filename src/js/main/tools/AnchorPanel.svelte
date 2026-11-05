@@ -35,13 +35,13 @@
   // the host has no use for it, and `shared` is compiled into the host bundle.
   const POINT_NAMES: Record<string, string> = {
     "top-left": "Top left",
-    "top-center": "Top centre",
+    "top-center": "Top center",
     "top-right": "Top right",
     "middle-left": "Middle left",
-    center: "Centre",
+    center: "Center",
     "middle-right": "Middle right",
     "bottom-left": "Bottom left",
-    "bottom-center": "Bottom centre",
+    "bottom-center": "Bottom center",
     "bottom-right": "Bottom right",
   };
 

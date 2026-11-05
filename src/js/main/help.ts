@@ -60,7 +60,7 @@ export const HELP: {
       "Click a card. It applies immediately. Soft, Medium and Hard set the strength.",
     ],
     notes: [
-      "An eased arrival (Easy Ease, any Out or In-Out curve) leaves no speed to bounce with, so the property is skipped with a message.",
+      "If every keyframe is reached with an eased arrival (Easy Ease, any Out or In-Out curve), there is no speed left to bounce with and the property is skipped with a message. If only some are, it applies and names the ones that will not bounce. Very short segments (under about 9 frames) still keep a little speed, so they bounce weakly instead of being skipped.",
       "The bounce happens after the keyframe: play or scrub past it to see it.",
       "One expression per property: Clear before switching between Dynamics and Loops.",
       "Clear removes every expression on the selected properties, including ones you wrote yourself.",
@@ -88,8 +88,8 @@ export const HELP: {
     steps: [
       "In the timeline, select an animated property by its name, with two or more keyframes.",
       "Pick a loop type and a direction: Out repeats after the last keyframe, In before the first.",
-      "Optional: Keys limits the loop to the end of the animation (1 = the last two keyframes). 0 loops everything.",
-      "Click Apply, then play past the last keyframe. The layer must last longer than its animation, or there is nothing to see.",
+      "Optional: Keys limits how much of the animation loops, counted from the end for Out or from the start for In (1 = two keyframes). 0 loops everything. Continue does not use it.",
+      "Click Apply, then play past the last keyframe (Out) or before the first (In). The layer must extend beyond the animation, or there is nothing to see.",
     ],
     terms: [
       {
@@ -106,7 +106,7 @@ export const HELP: {
       },
       {
         term: "Continue",
-        text: "Keeps moving at the speed of the last keyframe, forever. Needs a non-eased last keyframe (Linear or an In curve); otherwise there is no speed to continue.",
+        text: "Keeps moving forever at the speed of the last keyframe (Out) or the first (In). That keyframe must not be eased; otherwise there is no speed to continue and the property is skipped with a message.",
       },
     ],
     notes: [
@@ -119,14 +119,14 @@ export const HELP: {
     summary:
       "Moves a layer's anchor point to one of nine points of its bounding box, without the layer moving on screen.",
     steps: [
-      "Select one or more layers, or a single shape group inside a shape layer.",
+      "Select one or more layers, or shape groups inside shape layers (one group per layer).",
       "Park the playhead on a frame where the layer looks right. Text and animated layers are measured at the current frame.",
       "Click one of the nine points.",
     ],
     notes: [
       "Animated layers keep their motion path; rotation and scale then pivot around the new anchor.",
-      "A shape group works when it is the layer's only top-level group and is not rotated.",
-      "Skipped with a message: an expression on Position, a keyframed Anchor Point, separated dimensions, 3D layers rotated in X or Y, cameras and lights.",
+      "A shape group works when it is its layer's only top-level group, is not rotated or scaled to zero, and its transform is not animated.",
+      "Skipped with a message: an expression on Position, a keyframed Anchor Point, separated dimensions, 3D layers rotated in X or Y or with a non-zero Orientation, cameras and lights.",
     ],
   },
 
@@ -140,7 +140,7 @@ export const HELP: {
     ],
     notes: [
       "Distribute needs two or more layers against the Comp, three or more against the Selection.",
-      "Layers are spaced by their centres, so layers of different sizes end up evenly centred, not evenly gapped.",
+      "Layers are spaced by their centers, so layers of different sizes end up evenly centered, not evenly gapped.",
       "Animated layers keep their motion path.",
       "Skipped with a message: 3D layers, parented layers, separated dimensions, an expression on Position, cameras and lights. Shapes inside a single layer are not supported yet.",
     ],

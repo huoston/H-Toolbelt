@@ -92,10 +92,10 @@ const REQUIRED_TOKENS = [
   '"tab-motion"',
   "M2 2V14",
   // main/help and ToolSection — a line of the help text, a heading that only
-  // exists as template text, and the name of the button's icon.
-  "Needs a non-eased last keyframe",
+  // exists as template text, and the geometry of the button's icon.
+  "counted from the end for Out",
   ">How to use<",
-  '"info"',
+  "M8 7.2V11.4",
 ];
 
 const fail = (msg) => {

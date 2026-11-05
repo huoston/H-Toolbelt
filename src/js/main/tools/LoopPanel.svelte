@@ -131,7 +131,7 @@
         type="number"
         min="0"
         step="1"
-        title="How much of the animation to loop: 1 = the last two keyframes. 0 loops everything."
+        title="How much of the animation to loop, counted from the end (Out) or the start (In). 0 loops everything."
         bind:value={keyframes}
         disabled={busy || !countApplies}
       />
